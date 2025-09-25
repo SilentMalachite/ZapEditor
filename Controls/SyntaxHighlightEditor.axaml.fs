@@ -2,51 +2,49 @@ namespace ZapEditor.Controls
 
 open Avalonia
 open Avalonia.Controls
+open Avalonia.Interactivity
 open Avalonia.Markup.Xaml
 open AvaloniaEdit
+open AvaloniaEdit.Editing
 open AvaloniaEdit.TextMate
 open System
 open System.IO
 open System.Threading.Tasks
+open TextMateSharp.Grammars
+open TextMateSharp.Registry
 
 type SyntaxHighlightEditor () as this =
     inherit UserControl ()
 
-    let mutable editor: TextEditor option = None
-    let mutable textMate: TextMate.Installation option = None
+    let mutable textEditor: TextEditor option = None
+    let mutable textMateInstallation: TextMate.Installation option = None
 
     do this.InitializeComponent()
 
     member private this.InitializeComponent() =
-#if DEBUG
-        this.AttachDevTools()
-#endif
         AvaloniaXamlLoader.Load(this)
-        this.Loaded.Add(this.OnLoaded)
+        this.Loaded.Add(fun _ -> this.OnLoaded())
 
-    member private this.OnLoaded(sender: obj, e: RoutedEventArgs) =
-        let editorControl = this.FindControl<TextEditor>("Editor")
-        match editorControl with
+    member private this.OnLoaded() =
+        match this.FindControl<TextEditor>("Editor") with
         | null -> ()
-        | editor ->
-            this.SetupEditor(editor)
+        | editor -> this.SetupEditor(editor)
 
     member private this.SetupEditor(editor: TextEditor) =
-        // TextMateによるシンタックスハイライトを設定
-        let registryOptions = TextMate.RegistryOptions()
-        let textMateInstallation = editor.InstallTextMate(registryOptions)
+        let registryOptions = RegistryOptions(ThemeName.DarkPlus)
+        let installation = editor.InstallTextMate(registryOptions)
 
-        // 基本的な設定
-        editor.Options <- EditorOptions(
-            ConvertTabsToSpaces = true,
-            IndentationSize = 4,
-            EnableTextWrapping = false,
-            ShowLineNumbers = true,
-            HighlightCurrentLine = true
-        )
+        let options = editor.Options
+        options.ConvertTabsToSpaces <- true
+        options.IndentationSize <- 4
+        options.EnableHyperlinks <- false
+        options.EnableTextDragDrop <- true
+        editor.ShowLineNumbers <- true
 
-        textMateInstallation <- Some textMateInstallation
+        textEditor <- Some editor
+        textMateInstallation <- Some installation
         this.Editor <- Some editor
+        this.TextMateInstallation <- Some installation
 
     member this.SetLanguage(language: string) =
         match textMateInstallation with
@@ -70,16 +68,16 @@ type SyntaxHighlightEditor () as this =
                 | "rust" -> "rust"
                 | _ -> "text"
 
-            textMate.SetGrammarByScopeName(sprintf "source.%s" langName) |> ignore
+            textMate.SetGrammar(sprintf "source.%s" langName) |> ignore
         | None -> ()
 
     member this.Text
         with get() =
-            match editor with
+            match textEditor with
             | Some editor -> editor.Text
             | None -> ""
         and set(value) =
-            match editor with
+            match textEditor with
             | Some editor -> editor.Text <- value
             | None -> ()
 

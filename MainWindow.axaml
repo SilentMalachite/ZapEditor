@@ -3,8 +3,10 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:controls="clr-namespace:ZapEditor.Controls"
+        xmlns:viewModels="clr-namespace:ZapEditor.ViewModels"
         mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="800"
         x:Class="ZapEditor.MainWindow"
+        x:DataType="viewModels:MainWindowViewModel"
         Title="ZapEditor - 多言語対応テキストエディタ">
 
     <Grid RowDefinitions="Auto, *" ColumnDefinitions="200, *">
@@ -90,19 +92,15 @@
             <controls:SyntaxHighlightEditor Grid.Row="1" Name="Editor" />
 
             <!-- ステータスバー -->
-            <StatusBar Grid.Row="2">
-                <StatusBarItem>
+            <Border Grid.Row="2" Background="#f5f5f5" Padding="6">
+                <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
                     <TextBlock Text="{Binding StatusBarText}" />
-                </StatusBarItem>
-                <Separator />
-                <StatusBarItem>
+                    <TextBlock Text="|" />
                     <TextBlock Text="{Binding CurrentLanguage}" />
-                </StatusBarItem>
-                <Separator />
-                <StatusBarItem>
+                    <TextBlock Text="|" />
                     <TextBlock Text="{Binding CurrentFileName}" />
-                </StatusBarItem>
-            </StatusBar>
+                </StackPanel>
+            </Border>
         </Grid>
     </Grid>
 </Window>

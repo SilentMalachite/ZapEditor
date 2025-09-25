@@ -4,6 +4,7 @@ open System
 open System.ComponentModel
 open System.IO
 open System.Runtime.CompilerServices
+open Microsoft.FSharp.Control
 open System.Threading.Tasks
 open System.Windows.Input
 open Avalonia.Controls
@@ -11,13 +12,6 @@ open Avalonia.Platform.Storage
 open Avalonia.Threading
 open ZapEditor.Controls
 open ZapEditor.Services
-open System.Threading
-
-type INotifyPropertyChanged with
-    member this.NotifyPropertyChanged([<CallerMemberName>] ?propertyName: string) =
-        match propertyName with
-        | Some prop -> this.PropertyChanged.Invoke(this, PropertyChangedEventArgs(prop))
-        | None -> ()
 
 type RelayCommand(action: Action<obj>, canExecute: Func<obj, bool>) =
     let canExecuteChanged = Event<EventHandler, EventArgs>()
@@ -33,7 +27,6 @@ type RelayCommand(action: Action<obj>, canExecute: Func<obj, bool>) =
     new(action) = RelayCommand(action, null)
 
 type MainWindowViewModel() as this =
-    inherit INotifyPropertyChanged()
 
     let mutable currentFileContent = ""
     let mutable currentFileName = ResourceManager.GetString("App_Untitled")
@@ -42,15 +35,19 @@ type MainWindowViewModel() as this =
     let mutable currentFilePath: string option = None
     let mutable currentLanguageCode = "ja"
     let mutable editor: SyntaxHighlightEditor option = None
+    let mutable openFileDialogFunc: unit -> Task<string option> = fun () -> Task.FromResult<string option>(None)
+    let mutable saveFileDialogFunc: unit -> Task<string option> = fun () -> Task.FromResult<string option>(None)
 
-    let mutable propertyChanged = Event<PropertyChangedEventHandler, PropertyChangedEventArgs>()
+    let propertyChanged = Event<PropertyChangedEventHandler, PropertyChangedEventArgs>()
 
     interface INotifyPropertyChanged with
         [<CLIEvent>]
         member this.PropertyChanged = propertyChanged.Publish
 
-    member this.NotifyPropertyChanged(propertyName) =
-        propertyChanged.Trigger(this, PropertyChangedEventArgs(propertyName))
+    member this.NotifyPropertyChanged([<CallerMemberName>] ?propertyName: string) =
+        match propertyName with
+        | Some name -> propertyChanged.Trigger(this, PropertyChangedEventArgs(name))
+        | None -> ()
 
     member this.CurrentFileContent
         with get() = currentFileContent
@@ -86,6 +83,13 @@ type MainWindowViewModel() as this =
             if currentLanguageCode <> value then
                 currentLanguageCode <- value
                 this.NotifyPropertyChanged("CurrentLanguageCode")
+
+    member this.CurrentFilePath
+        with get() = currentFilePath
+        and set(value) =
+            if currentFilePath <> value then
+                currentFilePath <- value
+                this.NotifyPropertyChanged(nameof this.CurrentFilePath)
 
     member this.NewFileCommand = RelayCommand(fun _ -> this.NewFile())
     member this.OpenFileCommand = RelayCommand(fun _ -> this.OpenFile())
@@ -263,68 +267,63 @@ type MainWindowViewModel() as this =
 
     member private this.RunFSharpCode(code: string) =
         this.StatusBarText <- "F#コードを実行中..."
-        Task.Run(fun () ->
-            task {
-                let! result = CodeExecutionService.ExecuteFSharpCode(code)
-                Dispatcher.UIThread.Post(fun () ->
-                    if result.Success then
-                        this.StatusBarText <- "F#コードが正常に実行されました"
-                        // 実行結果を表示（将来的には別のウィンドウやパネルで）
-                        if not (String.IsNullOrWhiteSpace(result.Output)) then
-                            this.StatusBarText <- sprintf "実行結果: %s" result.Output
-                    else
-                        this.StatusBarText <- sprintf "実行エラー: %s" result.Error
-                )
-            }
-        ) |> ignore
+        task {
+            let! result = CodeExecutionService.ExecuteFSharpCode(code)
+            Dispatcher.UIThread.Post(fun () ->
+                if result.Success then
+                    this.StatusBarText <- "F#コードが正常に実行されました"
+                    if not (String.IsNullOrWhiteSpace(result.Output)) then
+                        this.StatusBarText <- sprintf "実行結果: %s" result.Output
+                else
+                    this.StatusBarText <- sprintf "実行エラー: %s" result.Error
+            )
+        }
+        |> ignore
 
     member private this.RunCSharpCode(code: string) =
         this.StatusBarText <- "C#コードを実行中..."
-        Task.Run(fun () ->
-            task {
-                let! result = CodeExecutionService.ExecuteCSharpCode(code)
-                Dispatcher.UIThread.Post(fun () ->
-                    if result.Success then
-                        this.StatusBarText <- "C#コードが正常に実行されました"
-                        if not (String.IsNullOrWhiteSpace(result.Output)) then
-                            this.StatusBarText <- sprintf "実行結果: %s" result.Output
-                    else
-                        this.StatusBarText <- sprintf "実行エラー: %s" result.Error
-                )
-            }
-        ) |> ignore
+        task {
+            let! result = CodeExecutionService.ExecuteCSharpCode(code)
+            Dispatcher.UIThread.Post(fun () ->
+                if result.Success then
+                    this.StatusBarText <- "C#コードが正常に実行されました"
+                    if not (String.IsNullOrWhiteSpace(result.Output)) then
+                        this.StatusBarText <- sprintf "実行結果: %s" result.Output
+                else
+                    this.StatusBarText <- sprintf "実行エラー: %s" result.Error
+            )
+        }
+        |> ignore
 
     member private this.RunPythonCode(code: string) =
         this.StatusBarText <- "Pythonコードを実行中..."
-        Task.Run(fun () ->
-            task {
-                let! result = CodeExecutionService.ExecutePythonCode(code)
-                Dispatcher.UIThread.Post(fun () ->
-                    if result.Success then
-                        this.StatusBarText <- "Pythonコードが正常に実行されました"
-                        if not (String.IsNullOrWhiteSpace(result.Output)) then
-                            this.StatusBarText <- sprintf "実行結果: %s" result.Output
-                    else
-                        this.StatusBarText <- sprintf "実行エラー: %s" result.Error
-                )
-            }
-        ) |> ignore
+        task {
+            let! result = CodeExecutionService.ExecutePythonCode(code)
+            Dispatcher.UIThread.Post(fun () ->
+                if result.Success then
+                    this.StatusBarText <- "Pythonコードが正常に実行されました"
+                    if not (String.IsNullOrWhiteSpace(result.Output)) then
+                        this.StatusBarText <- sprintf "実行結果: %s" result.Output
+                else
+                    this.StatusBarText <- sprintf "実行エラー: %s" result.Error
+            )
+        }
+        |> ignore
 
     member private this.RunJavaScriptCode(code: string) =
         this.StatusBarText <- "JavaScriptコードを実行中..."
-        Task.Run(fun () ->
-            task {
-                let! result = CodeExecutionService.ExecuteJavaScriptCode(code)
-                Dispatcher.UIThread.Post(fun () ->
-                    if result.Success then
-                        this.StatusBarText <- "JavaScriptコードが正常に実行されました"
-                        if not (String.IsNullOrWhiteSpace(result.Output)) then
-                            this.StatusBarText <- sprintf "実行結果: %s" result.Output
-                    else
-                        this.StatusBarText <- sprintf "実行エラー: %s" result.Error
-                )
-            }
-        ) |> ignore
+        task {
+            let! result = CodeExecutionService.ExecuteJavaScriptCode(code)
+            Dispatcher.UIThread.Post(fun () ->
+                if result.Success then
+                    this.StatusBarText <- "JavaScriptコードが正常に実行されました"
+                    if not (String.IsNullOrWhiteSpace(result.Output)) then
+                        this.StatusBarText <- sprintf "実行結果: %s" result.Output
+                else
+                    this.StatusBarText <- sprintf "実行エラー: %s" result.Error
+            )
+        }
+        |> ignore
 
     member private this.Undo() =
         this.StatusBarText <- "元に戻す"
@@ -347,11 +346,6 @@ type MainWindowViewModel() as this =
     member private this.SelectAll() =
         this.StatusBarText <- "すべて選択"
 
-    member val CurrentFilePath: string option = None with get, set
-
-    let mutable openFileDialogFunc: unit -> Task<string option> = fun () -> Task.FromResult None
-    let mutable saveFileDialogFunc: unit -> Task<string option> = fun () -> Task.FromResult None
-
     member this.SetFileOperations(openFunc, saveFunc) =
         openFileDialogFunc <- openFunc
         saveFileDialogFunc <- saveFunc
@@ -363,12 +357,12 @@ type MainWindowViewModel() as this =
 
     member private this.ShowOpenFileDialog() =
         async {
-            let! result = openFileDialogFunc()
+            let! result = openFileDialogFunc() |> Async.AwaitTask
             return result
         }
 
     member private this.ShowSaveFileDialog() =
         async {
-            let! result = saveFileDialogFunc()
+            let! result = saveFileDialogFunc() |> Async.AwaitTask
             return result
         }

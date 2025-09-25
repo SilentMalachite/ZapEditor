@@ -1,72 +1,115 @@
 # ZapEditor
 
-A cross-platform code editor built with F# and Avalonia UI featuring syntax highlighting and multi-language code execution.
+Cross-platform code editor built with F# and Avalonia UI. ZapEditor focuses on fast startup, TextMate-based syntax highlighting, and lightweight code execution helpers for popular scripting languages.
 
-## Features
+## Table of Contents
 
-- 🎨 Syntax highlighting with AvaloniaEdit
-- 🌍 Multi-language support (Japanese, English, Chinese)
-- 📁 File operations (open/save dialogs)
-- ▶️ Code execution for multiple languages:
-  - Python
-  - F#
-  - C#
-  - JavaScript
-- 🎯 Modern cross-platform UI with Avalonia
+1. [Feature Highlights](#feature-highlights)
+2. [Screenshots](#screenshots)
+3. [Quick Start](#quick-start)
+4. [Configuration](#configuration)
+5. [Project Layout](#project-layout)
+6. [Localization](#localization)
+7. [Development Workflow](#development-workflow)
+8. [Contributing](#contributing)
+9. [License](#license)
 
-## Technology Stack
+## Feature Highlights
 
-- **Framework**: .NET 9.0
-- **UI Framework**: Avalonia 11.3.6
-- **Language**: F#
-- **Editor Component**: AvaloniaEdit 0.10.12
-- **Syntax Highlighting**: TextMate integration
+- 🎨 **TextMate syntax highlighting** powered by `Avalonia.AvaloniaEdit` 11.0.5 + TextMate grammars
+- 🌐 **Instant language switching** (Japanese / English / Chinese) with localized resource strings
+- 🗂️ **File operations** backed by Avalonia storage provider (open, save, save-as)
+- ▶️ **Inline code execution** for F#, C#, Python, and JavaScript via pluggable `CodeExecutionService`
+- 💻 **Desktop-first UX** using Avalonia 11.3.6 targeting Windows, macOS, and Linux
 
-## Prerequisites
+## Screenshots
 
-- .NET 9.0 SDK
-- For code execution features:
-  - Python 3 (for Python code execution)
-  - Node.js (for JavaScript code execution)
+_Coming soon — contributions welcome!_
 
-## Building
+## Quick Start
+
+### Prerequisites
+
+- [.NET SDK 9.0](https://dotnet.microsoft.com/download/dotnet/9.0)
+- Optional runtime dependencies for code execution features:
+  - Python 3.x (`python3` on PATH)
+  - Node.js 18+ (`node` on PATH)
+
+### Clone & Run
 
 ```bash
-# Restore dependencies
-dotnet restore
+git clone https://github.com/SilentMalachite/ZapEditor.git
+cd ZapEditor
 
-# Build the project
-dotnet build
+# Restore packages (offline-friendly)
+dotnet restore --ignore-failed-sources
 
-# Run the application
+# Build and start the app
 dotnet run
 ```
 
-## Project Status
+> ℹ️ 脆弱性データの取得がネットワーク制限で失敗する場合は `--ignore-failed-sources` を付けてください。ビルド自体には影響しません。
 
-⚠️ **Note**: This project is currently in development. Some features may require additional work due to API compatibility issues between Avalonia versions.
+### Packaging
 
-### Recent Fixes
+```bash
+# Produce a framework-dependent build
+dotnet publish -c Release -r win-x64 --self-contained false
+```
 
-- ✅ Fixed package version conflicts (AvaloniaEdit)
-- ✅ Resolved duplicate resource compilation issues
-- ✅ Fixed F# syntax errors in core services
-- 🔧 Additional API compatibility work needed for full functionality
+Adjust the runtime identifier (`-r`) for `osx-x64`, `linux-x64`, etc.
 
-## Architecture
+## Configuration
 
-- `Program.fs` - Application entry point
-- `App.axaml/.fs` - Main application configuration
-- `MainWindow.axaml/.fs` - Main window implementation
-- `ViewModels/` - MVVM view models
-- `Services/` - Business logic services
-- `Controls/` - Custom UI controls
-- `Resources/` - Localization resources
+| Area | How to customize |
+| ---- | ---------------- |
+| Default culture | Update `Resources/Strings.*.resx` or call `ResourceManager.SetLanguage` on startup |
+| Syntax themes | Replace `ThemeName.DarkPlus` in `Controls/SyntaxHighlightEditor.axaml.fs` with another `ThemeName` |
+| Supported grammars | Extend `SetLanguage` mapping in `SyntaxHighlightEditor` and `DetectLanguage` in `MainWindowViewModel` |
+| Execution backends | Implement additional helpers in `Services/CodeExecutionService.fs` |
+
+## Project Layout
+
+```
+ZapEditor/
+├── App.axaml(.fs)              # Application shell and lifecycle hooks
+├── Controls/
+│   └── SyntaxHighlightEditor   # Custom TextMate-enabled editor control
+├── Resources/                  # Localized string resources
+├── Services/
+│   ├── CodeExecutionService.fs # External process executor
+│   └── ResourceManager.fs      # Culture-aware resource accessor
+├── ViewModels/
+│   └── MainWindowViewModel.fs  # MVVM logic and command bindings
+├── MainWindow.axaml(.fs)       # Main window view + code-behind
+└── Program.fs                  # Entry point
+```
+
+## Localization
+
+UI strings live under `Resources/Strings.<culture>.resx`. Add new cultures by duplicating the neutral resource file, translating strings, and wiring the culture code in `ResourceManager.SetLanguage`.
+
+The current UI culture is toggled at runtime from `MainWindowViewModel.SetLanguage`, ensuring the menu, status text, and dialogs are refreshed immediately.
+
+## Development Workflow
+
+```bash
+# Lint / build continuously
+dotnet build
+
+# Clean intermediate artifacts
+dotnet clean
+
+# Run the editor in watch mode (hot reload)
+dotnet watch run
+```
+
+When working on TextMate grammars, enable Avalonia diagnostics (`dotnet run -c Debug`) to inspect control trees in-app.
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit issues and pull requests.
+Contributions are very welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on setting up your environment, opening issues, and submitting pull requests.
 
 ## License
 
-This project is open source. Please add your preferred license here.
+Licensed under the [Apache License 2.0](LICENSE).

@@ -2,7 +2,9 @@ namespace ZapEditor
 
 open Avalonia
 open Avalonia.Controls
+open Avalonia.Diagnostics
 open Avalonia.Markup.Xaml
+open Avalonia.Platform.Storage
 open ZapEditor.ViewModels
 open ZapEditor.Controls
 open System.IO
@@ -32,12 +34,12 @@ type MainWindow () as this =
         )
 
         // シンタックスハイライトエディタを取得
-        let editor = this.FindControl<SyntaxHighlightEditor>("Editor")
-        match editor with
-        | null -> ()
-        | editorControl ->
+        this.FindControl<SyntaxHighlightEditor>("Editor")
+        |> Option.ofObj
+        |> Option.iter (fun editorControl ->
             // ViewModelとエディタの連携
             viewModel.SetEditor(editorControl)
+        )
 
     member private this.ShowOpenFileDialogAsync() =
         task {

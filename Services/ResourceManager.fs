@@ -7,7 +7,7 @@ open System.Reflection
 
 type ResourceManager() =
     static let resourceManager =
-        new ResourceManager("ZapEditor.Resources.Strings", Assembly.GetExecutingAssembly())
+        System.Resources.ResourceManager("ZapEditor.Resources.Strings", Assembly.GetExecutingAssembly())
 
     static let mutable currentCulture = CultureInfo.CurrentUICulture
 
