@@ -1,0 +1,237 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+
+  <!-- Menu Items -->
+  <data name="Menu_File" xml:space="preserve">
+    <value>ファイル(_F)</value>
+  </data>
+  <data name="Menu_File_New" xml:space="preserve">
+    <value>新規作成(_N)</value>
+  </data>
+  <data name="Menu_File_Open" xml:space="preserve">
+    <value>開く(_O)</value>
+  </data>
+  <data name="Menu_File_Save" xml:space="preserve">
+    <value>保存(_S)</value>
+  </data>
+  <data name="Menu_File_SaveAs" xml:space="preserve">
+    <value>名前を付けて保存(_A)</value>
+  </data>
+  <data name="Menu_File_Exit" xml:space="preserve">
+    <value>終了(_X)</value>
+  </data>
+
+  <data name="Menu_Edit" xml:space="preserve">
+    <value>編集(_E)</value>
+  </data>
+  <data name="Menu_Edit_Undo" xml:space="preserve">
+    <value>元に戻す(_U)</value>
+  </data>
+  <data name="Menu_Edit_Redo" xml:space="preserve">
+    <value>やり直し(_R)</value>
+  </data>
+  <data name="Menu_Edit_Cut" xml:space="preserve">
+    <value>切り取り(_T)</value>
+  </data>
+  <data name="Menu_Edit_Copy" xml:space="preserve">
+    <value>コピー(_C)</value>
+  </data>
+  <data name="Menu_Edit_Paste" xml:space="preserve">
+    <value>貼り付け(_P)</value>
+  </data>
+  <data name="Menu_Edit_Delete" xml:space="preserve">
+    <value>削除(_D)</value>
+  </data>
+  <data name="Menu_Edit_SelectAll" xml:space="preserve">
+    <value>すべて選択(_A)</value>
+  </data>
+
+  <data name="Menu_View" xml:space="preserve">
+    <value>表示(_V)</value>
+  </data>
+  <data name="Menu_View_Language" xml:space="preserve">
+    <value>言語切替(_L)</value>
+  </data>
+
+  <data name="Menu_Run" xml:space="preserve">
+    <value>実行(_R)</value>
+  </data>
+  <data name="Menu_Run_Execute" xml:space="preserve">
+    <value>コードを実行(_X)</value>
+  </data>
+  <data name="Menu_Run_Debug" xml:space="preserve">
+    <value>デバッグ(_D)</value>
+  </data>
+
+  <!-- Toolbar -->
+  <data name="Toolbar_New" xml:space="preserve">
+    <value>新規</value>
+  </data>
+  <data name="Toolbar_Open" xml:space="preserve">
+    <value>開く</value>
+  </data>
+  <data name="Toolbar_Save" xml:space="preserve">
+    <value>保存</value>
+  </data>
+  <data name="Toolbar_Run" xml:space="preserve">
+    <value>実行</value>
+  </data>
+  <data name="Toolbar_Debug" xml:space="preserve">
+    <value>デバッグ</value>
+  </data>
+
+  <!-- Sidebar -->
+  <data name="Sidebar_FileTree" xml:space="preserve">
+    <value>ファイルツリー</value>
+  </data>
+  <data name="Sidebar_Project" xml:space="preserve">
+    <value>プロジェクト</value>
+  </data>
+  <data name="Sidebar_SourceCode" xml:space="preserve">
+    <value>ソースコード</value>
+  </data>
+  <data name="Sidebar_Resources" xml:space="preserve">
+    <value>リソース</value>
+  </data>
+  <data name="Sidebar_Documents" xml:space="preserve">
+    <value>ドキュメント</value>
+  </data>
+
+  <!-- Language Selector -->
+  <data name="Language_AutoDetect" xml:space="preserve">
+    <value>自動検出</value>
+  </data>
+  <data name="Language_FSharp" xml:space="preserve">
+    <value>F#</value>
+  </data>
+  <data name="Language_CSharp" xml:space="preserve">
+    <value>C#</value>
+  </data>
+  <data name="Language_Python" xml:space="preserve">
+    <value>Python</value>
+  </data>
+  <data name="Language_JavaScript" xml:space="preserve">
+    <value>JavaScript</value>
+  </data>
+  <data name="Language_TypeScript" xml:space="preserve">
+    <value>TypeScript</value>
+  </data>
+  <data name="Language_HTML" xml:space="preserve">
+    <value>HTML</value>
+  </data>
+  <data name="Language_CSS" xml:space="preserve">
+    <value>CSS</value>
+  </data>
+  <data name="Language_JSON" xml:space="preserve">
+    <value>JSON</value>
+  </data>
+  <data name="Language_XML" xml:space="preserve">
+    <value>XML</value>
+  </data>
+
+  <!-- Status Messages -->
+  <data name="Status_Ready" xml:space="preserve">
+    <value>準備完了</value>
+  </data>
+  <data name="Status_NewFile" xml:space="preserve">
+    <value>新しいファイルを作成しました</value>
+  </data>
+  <data name="Status_FileOpened" xml:space="preserve">
+    <value>ファイルを開きました: {0}</value>
+  </data>
+  <data name="Status_FileSaved" xml:space="preserve">
+    <value>ファイルを保存しました: {0}</value>
+  </data>
+  <data name="Status_FileOpenError" xml:space="preserve">
+    <value>ファイルを開けませんでした: {0}</value>
+  </data>
+  <data name="Status_FileSaveError" xml:space="preserve">
+    <value>ファイルを保存できませんでした: {0}</value>
+  </data>
+  <data name="Status_NoCode" xml:space="preserve">
+    <value>コードがありません</value>
+  </data>
+  <data name="Status_UnsupportedLanguage" xml:space="preserve">
+    <value>対応していない言語です</value>
+  </data>
+  <data name="Status_DebugInDevelopment" xml:space="preserve">
+    <value>デバッグ機能は開発中です</value>
+  </data>
+  <data name="Status_LanguageChanged" xml:space="preserve">
+    <value>言語を変更しました: {0}</value>
+  </data>
+
+  <!-- Dialog Titles -->
+  <data name="Dialog_OpenFile" xml:space="preserve">
+    <value>ファイルを開く</value>
+  </data>
+  <data name="Dialog_SaveFile" xml:space="preserve">
+    <value>名前を付けて保存</value>
+  </data>
+
+  <!-- Application -->
+  <data name="App_Untitled" xml:space="preserve">
+    <value>無題</value>
+  </data>
+  <data name="App_Title" xml:space="preserve">
+    <value>ZapEditor - 多言語対応テキストエディタ</value>
+  </data>
+</root>

@@ -1,0 +1,19 @@
+{
+  "description": "Template configuration for this project. See https://www.codebuff.com/config for all options.",
+  "startupProcesses": [
+    {
+      "name": "build",
+      "command": "dotnet build --verbosity quiet",
+      "enabled": true,
+      "stdoutFile": "logs/build.log"
+    }
+  ],
+  "fileChangeHooks": [
+    {
+      "name": "typecheck",
+      "command": "dotnet build --verbosity quiet --no-restore",
+      "filePattern": "**/*.fs",
+      "enabled": true
+    }
+  ]
+}

@@ -1,0 +1,108 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:controls="clr-namespace:ZapEditor.Controls"
+        mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="800"
+        x:Class="ZapEditor.MainWindow"
+        Title="ZapEditor - 多言語対応テキストエディタ">
+
+    <Grid RowDefinitions="Auto, *" ColumnDefinitions="200, *">
+
+        <!-- メニューバー -->
+        <Menu Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2">
+            <MenuItem Header="ファイル(_F)">
+                <MenuItem Header="新規作成(_N)" Command="{Binding NewFileCommand}" />
+                <MenuItem Header="開く(_O)" Command="{Binding OpenFileCommand}" />
+                <MenuItem Header="保存(_S)" Command="{Binding SaveFileCommand}" />
+                <MenuItem Header="名前を付けて保存(_A)" Command="{Binding SaveAsFileCommand}" />
+                <Separator />
+                <MenuItem Header="終了(_X)" Command="{Binding ExitCommand}" />
+            </MenuItem>
+            <MenuItem Header="編集(_E)">
+                <MenuItem Header="元に戻す(_U)" Command="{Binding UndoCommand}" />
+                <MenuItem Header="やり直し(_R)" Command="{Binding RedoCommand}" />
+                <Separator />
+                <MenuItem Header="切り取り(_T)" Command="{Binding CutCommand}" />
+                <MenuItem Header="コピー(_C)" Command="{Binding CopyCommand}" />
+                <MenuItem Header="貼り付け(_P)" Command="{Binding PasteCommand}" />
+                <MenuItem Header="削除(_D)" Command="{Binding DeleteCommand}" />
+                <Separator />
+                <MenuItem Header="すべて選択(_A)" Command="{Binding SelectAllCommand}" />
+            </MenuItem>
+            <MenuItem Header="表示(_V)">
+                <MenuItem Header="言語切替(_L)">
+                    <MenuItem Header="日本語" Command="{Binding SetLanguageCommand}" CommandParameter="ja" />
+                    <MenuItem Header="English" Command="{Binding SetLanguageCommand}" CommandParameter="en" />
+                    <MenuItem Header="中文" Command="{Binding SetLanguageCommand}" CommandParameter="zh" />
+                </MenuItem>
+            </MenuItem>
+            <MenuItem Header="実行(_R)">
+                <MenuItem Header="コードを実行(_X)" Command="{Binding RunCodeCommand}" />
+                <MenuItem Header="デバッグ(_D)" Command="{Binding DebugCodeCommand}" />
+            </MenuItem>
+        </Menu>
+
+        <!-- サイドバー -->
+        <DockPanel Grid.Row="1" Grid.Column="0" Background="#F0F0F0">
+            <TextBlock Text="ファイルツリー" DockPanel.Dock="Top" Margin="5" FontWeight="Bold" />
+            <TreeView Name="FileTree" Margin="5">
+                <TreeViewItem Header="プロジェクト" IsExpanded="True">
+                    <TreeViewItem Header="ソースコード" />
+                    <TreeViewItem Header="リソース" />
+                    <TreeViewItem Header="ドキュメント" />
+                </TreeViewItem>
+            </TreeView>
+        </DockPanel>
+
+        <!-- メインエディタエリア -->
+        <Grid Grid.Row="1" Grid.Column="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- ツールバー -->
+            <StackPanel Grid.Row="0" Orientation="Horizontal" Background="#E0E0E0" Margin="2">
+                <Button Content="新規" Command="{Binding NewFileCommand}" Margin="2" Width="60" />
+                <Button Content="開く" Command="{Binding OpenFileCommand}" Margin="2" Width="60" />
+                <Button Content="保存" Command="{Binding SaveFileCommand}" Margin="2" Width="60" />
+                <Separator Margin="5" />
+                <Button Content="実行" Command="{Binding RunCodeCommand}" Margin="2" Width="60" />
+                <Button Content="デバッグ" Command="{Binding DebugCodeCommand}" Margin="2" Width="60" />
+                <Separator Margin="5" />
+                <ComboBox Name="LanguageSelector" Width="120" Margin="2">
+                    <ComboBoxItem Content="自動検出" IsSelected="True" />
+                    <ComboBoxItem Content="F#" />
+                    <ComboBoxItem Content="C#" />
+                    <ComboBoxItem Content="Python" />
+                    <ComboBoxItem Content="JavaScript" />
+                    <ComboBoxItem Content="TypeScript" />
+                    <ComboBoxItem Content="HTML" />
+                    <ComboBoxItem Content="CSS" />
+                    <ComboBoxItem Content="JSON" />
+                    <ComboBoxItem Content="XML" />
+                </ComboBox>
+            </StackPanel>
+
+            <!-- テキストエディタ -->
+            <controls:SyntaxHighlightEditor Grid.Row="1" Name="Editor" />
+
+            <!-- ステータスバー -->
+            <StatusBar Grid.Row="2">
+                <StatusBarItem>
+                    <TextBlock Text="{Binding StatusBarText}" />
+                </StatusBarItem>
+                <Separator />
+                <StatusBarItem>
+                    <TextBlock Text="{Binding CurrentLanguage}" />
+                </StatusBarItem>
+                <Separator />
+                <StatusBarItem>
+                    <TextBlock Text="{Binding CurrentFileName}" />
+                </StatusBarItem>
+            </StatusBar>
+        </Grid>
+    </Grid>
+</Window>
