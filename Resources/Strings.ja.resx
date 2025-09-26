@@ -215,8 +215,146 @@
   <data name="Status_DebugInDevelopment" xml:space="preserve">
     <value>デバッグ機能は開発中です</value>
   </data>
-  <data name="Status_LanguageChanged" xml:space="preserve">
+<data name="Status_LanguageChanged" xml:space="preserve">
     <value>言語を変更しました: {0}</value>
+  </data>
+  
+  <!-- Execution Status -->
+  <data name="Status_ExecutingFSharp" xml:space="preserve">
+    <value>F#コードを実行中...</value>
+  </data>
+  <data name="Status_ExecutingCSharp" xml:space="preserve">
+    <value>C#コードを実行中...</value>
+  </data>
+  <data name="Status_ExecutingPython" xml:space="preserve">
+    <value>Pythonコードを実行中...</value>
+  </data>
+  <data name="Status_ExecutingJavaScript" xml:space="preserve">
+    <value>JavaScriptコードを実行中...</value>
+  </data>
+  <data name="Status_ExecutionSuccess" xml:space="preserve">
+    <value>コードが正常に実行されました</value>
+  </data>
+  <data name="Status_ExecutionResult" xml:space="preserve">
+    <value>実行結果: {0}</value>
+  </data>
+  <data name="Status_ExecutionError" xml:space="preserve">
+    <value>実行エラー: {0}</value>
+  </data>
+  <data name="Status_ExecutionFailed" xml:space="preserve">
+    <value>実行に失敗しました: {0}</value>
+  </data>
+  <data name="Status_CodeTooLarge" xml:space="preserve">
+    <value>コードが大きすぎます (50KB制限)</value>
+  </data>
+  <data name="Status_NoContentToSave" xml:space="preserve">
+    <value>保存する内容がありません</value>
+  </data>
+  
+  <!-- Error Messages -->
+  <data name="Status_FileNotFound" xml:space="preserve">
+    <value>ファイルが見つかりません: {0}</value>
+  </data>
+  <data name="Status_FileAccessDenied" xml:space="preserve">
+    <value>ファイルへのアクセスが拒否されました</value>
+  </data>
+  <data name="Status_FileTooLarge" xml:space="preserve">
+    <value>ファイルサイズが大きすぎます (10MB制限)</value>
+  </data>
+  <data name="Status_SecurityError" xml:space="preserve">
+    <value>セキュリティエラーが発生しました</value>
+  </data>
+  <data name="Status_PathTooLong" xml:space="preserve">
+    <value>パスが長すぎます</value>
+  </data>
+  <data name="Status_DirectoryNotFound" xml:space="preserve">
+    <value>ディレクトリが見つかりません</value>
+  </data>
+  <data name="Status_FileInUse" xml:space="preserve">
+    <value>ファイルは使用中です</value>
+  </data>
+  
+  <!-- Edit Commands -->
+  <data name="Edit_Undo" xml:space="preserve">
+    <value>元に戻す</value>
+  </data>
+  <data name="Edit_Redo" xml:space="preserve">
+    <value>やり直し</value>
+  </data>
+  <data name="Edit_Cut" xml:space="preserve">
+    <value>切り取り</value>
+  </data>
+  <data name="Edit_Copy" xml:space="preserve">
+    <value>コピー</value>
+  </data>
+  <data name="Edit_Paste" xml:space="preserve">
+    <value>貼り付け</value>
+  </data>
+  <data name="Edit_Delete" xml:space="preserve">
+    <value>削除</value>
+  </data>
+  <data name="Edit_SelectAll" xml:space="preserve">
+    <value>すべて選択</value>
+  </data>
+  
+  <!-- Debug Status -->
+  <data name="Status_DebuggingFSharp" xml:space="preserve">
+    <value>F#コードをデバッグ中...</value>
+  </data>
+  <data name="Status_DebuggingCSharp" xml:space="preserve">
+    <value>C#コードをデバッグ中...</value>
+  </data>
+  <data name="Status_DebuggingPython" xml:space="preserve">
+    <value>Pythonコードをデバッグ中...</value>
+  </data>
+  <data name="Status_DebuggingJavaScript" xml:space="preserve">
+    <value>JavaScriptコードをデバッグ中...</value>
+  </data>
+  <data name="Status_DebugSuccess" xml:space="preserve">
+    <value>デバッグが正常に完了しました</value>
+  </data>
+  <data name="Status_DebugOutput" xml:space="preserve">
+    <value>デバッグ出力: {0}</value>
+  </data>
+  <data name="Status_DebugError" xml:space="preserve">
+    <value>デバッグエラー: {0}</value>
+  </data>
+  <data name="Status_DebugFailed" xml:space="preserve">
+    <value>デバッグに失敗しました: {0}</value>
+  </data>
+  
+  <!-- Editor Status -->
+  <data name="Status_NoEditor" xml:space="preserve">
+    <value>エディタが利用できません</value>
+  </data>
+  <data name="Status_NothingToUndo" xml:space="preserve">
+    <value>元に戻す操作がありません</value>
+  </data>
+  <data name="Status_NothingToRedo" xml:space="preserve">
+    <value>やり直す操作がありません</value>
+  </data>
+  <data name="Status_NothingToCut" xml:space="preserve">
+    <value>切り取るテキストがありません</value>
+  </data>
+  <data name="Status_NothingToCopy" xml:space="preserve">
+    <value>コピーするテキストがありません</value>
+  </data>
+  <data name="Status_NothingToDelete" xml:space="preserve">
+    <value>削除するテキストがありません</value>
+  </data>
+  <data name="Status_NothingToSelect" xml:space="preserve">
+    <value>選択するテキストがありません</value>
+  </data>
+  <data name="Status_ClipboardEmpty" xml:space="preserve">
+    <value>クリップボードが空です</value>
+  </data>
+  <data name="Status_PasteError" xml:space="preserve">
+    <value>貼り付けエラー: {0}</value>
+  </data>
+  
+  <!-- Application Exit -->
+  <data name="App_Exiting" xml:space="preserve">
+    <value>アプリケーションを終了します</value>
   </data>
 
   <!-- Dialog Titles -->

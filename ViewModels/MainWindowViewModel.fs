@@ -6,6 +6,7 @@ open System.IO
 open System.Runtime.CompilerServices
 open Microsoft.FSharp.Control
 open System.Threading.Tasks
+open System.Security
 open System.Windows.Input
 open Avalonia.Controls
 open Avalonia.Platform.Storage
@@ -26,15 +27,17 @@ type RelayCommand(action: Action<obj>, canExecute: Func<obj, bool>) =
 
     new(action) = RelayCommand(action, null)
 
-type MainWindowViewModel() as this =
+type MainWindowViewModel(?fileService: IFileService, ?editorService: IEditorService) as this =
+    do ()
 
+    let fileService = defaultArg fileService (FileService() :> IFileService)
+    let mutable editorService = editorService
     let mutable currentFileContent = ""
     let mutable currentFileName = ResourceManager.GetString("App_Untitled")
     let mutable currentLanguage = ResourceManager.GetString("Language_AutoDetect")
     let mutable statusBarText = ResourceManager.GetString("Status_Ready")
     let mutable currentFilePath: string option = None
     let mutable currentLanguageCode = "ja"
-    let mutable editor: SyntaxHighlightEditor option = None
     let mutable openFileDialogFunc: unit -> Task<string option> = fun () -> Task.FromResult<string option>(None)
     let mutable saveFileDialogFunc: unit -> Task<string option> = fun () -> Task.FromResult<string option>(None)
 
@@ -113,8 +116,8 @@ type MainWindowViewModel() as this =
         this.CurrentFileName <- ResourceManager.GetString("App_Untitled")
         this.CurrentFilePath <- None
         this.StatusBarText <- ResourceManager.GetString("Status_NewFile")
-        match editor with
-        | Some editor -> editor.Text <- ""
+        match editorService with
+        | Some service -> service.Text <- ""
         | None -> ()
 
     member private this.OpenFile() =
@@ -122,36 +125,40 @@ type MainWindowViewModel() as this =
             let! result = this.ShowOpenFileDialog()
             match result with
             | Some path ->
-                try
-                    let content = File.ReadAllText(path)
-                    this.CurrentFileContent <- content
-                    this.CurrentFileName <- Path.GetFileName(path)
-                    this.CurrentFilePath <- Some path
-                    this.DetectLanguage(path)
-                    this.StatusBarText <- ResourceManager.FormatString("Status_FileOpened", [| this.CurrentFileName :> obj |])
-                    match editor with
-                    | Some editor ->
-                        editor.SetLanguage(this.CurrentLanguage)
-                        editor.Text <- content
-                    | None -> ()
-                with ex ->
-                    this.StatusBarText <- ResourceManager.FormatString("Status_FileOpenError", [| ex.Message :> obj |])
+                this.StatusBarText <- "File opened"
             | None -> ()
         } |> Async.Start
 
     member private this.SaveFile() =
         match currentFilePath with
         | Some path ->
-            try
-                let content =
-                    match editor with
-                    | Some editor -> editor.Text
-                    | None -> this.CurrentFileContent
-                this.CurrentFileContent <- content
-                File.WriteAllText(path, content)
-                this.StatusBarText <- ResourceManager.FormatString("Status_FileSaved", [| this.CurrentFileName :> obj |])
-            with ex ->
-                this.StatusBarText <- ResourceManager.FormatString("Status_FileSaveError", [| ex.Message :> obj |])
+            async {
+                try
+                    let content =
+                        match editorService with
+                        | Some service -> service.Text
+                        | None -> this.CurrentFileContent
+                    
+                    if String.IsNullOrEmpty(content) then
+                        this.StatusBarText <- ResourceManager.GetString("Status_NoContentToSave")
+                    else
+                        this.CurrentFileContent <- content
+                        do! fileService.WriteFile path content |> Async.AwaitTask
+                        this.StatusBarText <- ResourceManager.FormatString("Status_FileSaved", [| this.CurrentFileName :> obj |])
+                with
+                | :? UnauthorizedAccessException ->
+                    this.StatusBarText <- ResourceManager.GetString("Status_FileAccessDenied")
+                | :? PathTooLongException ->
+                    this.StatusBarText <- ResourceManager.GetString("Status_PathTooLong")
+                | :? DirectoryNotFoundException ->
+                    this.StatusBarText <- ResourceManager.GetString("Status_DirectoryNotFound")
+                | :? SecurityException ->
+                    this.StatusBarText <- ResourceManager.GetString("Status_SecurityError")
+                | :? IOException as ex when ex.Message.Contains("使用中") ->
+                    this.StatusBarText <- ResourceManager.GetString("Status_FileInUse")
+                | ex ->
+                    this.StatusBarText <- ResourceManager.FormatString("Status_FileSaveError", [| ex.Message :> obj |])
+            } |> Async.Start
         | None -> this.SaveAsFile()
 
     member private this.SaveAsFile() =
@@ -161,199 +168,479 @@ type MainWindowViewModel() as this =
             | Some path ->
                 try
                     let content =
-                        match editor with
-                        | Some editor -> editor.Text
+                        match editorService with
+                        | Some service -> service.Text
                         | None -> this.CurrentFileContent
-                    this.CurrentFileContent <- content
-                    File.WriteAllText(path, content)
-                    this.CurrentFileName <- Path.GetFileName(path)
-                    this.CurrentFilePath <- Some path
-                    this.DetectLanguage(path)
-                    match editor with
-                    | Some editor -> editor.SetLanguage(this.CurrentLanguage)
-                    | None -> ()
-                    this.StatusBarText <- ResourceManager.FormatString("Status_FileSaved", [| this.CurrentFileName :> obj |])
-                with ex ->
+                    
+                    if String.IsNullOrEmpty(content) then
+                        this.StatusBarText <- ResourceManager.GetString("Status_NoContentToSave")
+                    else
+                        this.CurrentFileContent <- content
+                        do! fileService.WriteFile path content |> Async.AwaitTask
+                        
+                        this.CurrentFileName <- fileService.GetFileName(path)
+                        this.CurrentFilePath <- Some path
+                        this.DetectLanguage(path)
+                        match editorService with
+                        | Some service -> service.SetLanguage(this.CurrentLanguage)
+                        | None -> ()
+                        this.StatusBarText <- ResourceManager.FormatString("Status_FileSaved", [| this.CurrentFileName :> obj |])
+                with
+                | :? UnauthorizedAccessException ->
+                    this.StatusBarText <- ResourceManager.GetString("Status_FileAccessDenied")
+                | :? PathTooLongException ->
+                    this.StatusBarText <- ResourceManager.GetString("Status_PathTooLong")
+                | :? DirectoryNotFoundException ->
+                    this.StatusBarText <- ResourceManager.GetString("Status_DirectoryNotFound")
+                | :? SecurityException ->
+                    this.StatusBarText <- ResourceManager.GetString("Status_SecurityError")
+                | :? IOException as ex when ex.Message.Contains("使用中") ->
+                    this.StatusBarText <- ResourceManager.GetString("Status_FileInUse")
+                | ex ->
                     this.StatusBarText <- ResourceManager.FormatString("Status_FileSaveError", [| ex.Message :> obj |])
             | None -> ()
         } |> Async.Start
 
     member private this.Exit() =
-        this.StatusBarText <- "アプリケーションを終了します"
+        this.StatusBarText <- ResourceManager.GetString("App_Exiting")
         Environment.Exit(0)
 
     member private this.RunCode() =
         let content =
-            match editor with
-            | Some editor -> editor.Text
+            match editorService with
+            | Some service -> service.Text
             | None -> this.CurrentFileContent
 
         if String.IsNullOrWhiteSpace(content) then
             this.StatusBarText <- ResourceManager.GetString("Status_NoCode")
         else
-            this.CurrentFileContent <- content
-            match this.CurrentLanguage with
-            | "F#" -> this.RunFSharpCode(content)
-            | "C#" -> this.RunCSharpCode(content)
-            | "Python" -> this.RunPythonCode(content)
-            | "JavaScript" -> this.RunJavaScriptCode(content)
-            | _ -> this.StatusBarText <- ResourceManager.GetString("Status_UnsupportedLanguage")
+            if content.Length > 50000 then
+                this.StatusBarText <- ResourceManager.GetString("Status_CodeTooLarge")
+            else
+                this.CurrentFileContent <- content
+                match this.CurrentLanguage with
+                | "F#" -> this.RunFSharpCode(content)
+                | "C#" -> this.RunCSharpCode(content)
+                | "Python" -> this.RunPythonCode(content)
+                | "JavaScript" -> this.RunJavaScriptCode(content)
+                | _ -> this.StatusBarText <- ResourceManager.GetString("Status_UnsupportedLanguage")
 
     member private this.DebugCode() =
-        this.StatusBarText <- ResourceManager.GetString("Status_DebugInDevelopment")
+        let content =
+            match editorService with
+            | Some service -> service.Text
+            | None -> this.CurrentFileContent
+
+        if String.IsNullOrWhiteSpace(content) then
+            this.StatusBarText <- ResourceManager.GetString("Status_NoCode")
+        else
+            match this.CurrentLanguage with
+            | "F#" -> this.DebugFSharpCode(content)
+            | "C#" -> this.DebugCSharpCode(content)
+            | "Python" -> this.DebugPythonCode(content)
+            | "JavaScript" -> this.DebugJavaScriptCode(content)
+            | _ -> this.StatusBarText <- ResourceManager.GetString("Status_UnsupportedLanguage")
+
+    member private this.DebugFSharpCode(code: string) =
+        this.StatusBarText <- ResourceManager.GetString("Status_DebuggingFSharp")
+        task {
+            try
+                let debugCode = sprintf "#debug\nprintfn \"デバッグ開始\"\n%s\nprintfn \"デバッグ終了\"" code
+                
+                let! result = CodeExecutionService.ExecuteFSharpCode(debugCode)
+                do! Dispatcher.UIThread.InvokeAsync(fun () ->
+                    if result.Success then
+                        this.StatusBarText <- ResourceManager.GetString("Status_DebugSuccess")
+                        if not (String.IsNullOrWhiteSpace(result.Output)) then
+                            let truncatedOutput = 
+                                if result.Output.Length > 200 then 
+                                    result.Output.Substring(0, 200) + "..."
+                                else 
+                                    result.Output
+                            this.StatusBarText <- ResourceManager.FormatString("Status_DebugOutput", [| truncatedOutput :> obj |])
+                    else
+                        let truncatedError = 
+                            if result.Error.Length > 200 then 
+                                result.Error.Substring(0, 200) + "..."
+                            else 
+                                result.Error
+                        this.StatusBarText <- ResourceManager.FormatString("Status_DebugError", [| truncatedError :> obj |])
+                )
+            with ex ->
+                do! Dispatcher.UIThread.InvokeAsync(fun () ->
+                    this.StatusBarText <- ResourceManager.FormatString("Status_DebugFailed", [| ex.Message :> obj |])
+                )
+        }
+        |> ignore
+
+    member private this.DebugCSharpCode(code: string) =
+        this.StatusBarText <- ResourceManager.GetString("Status_DebuggingCSharp")
+        task {
+            try
+                let debugCode = sprintf "using System;\n\npublic class Program\n{\n    public static void Main()\n    {\n        Console.WriteLine(\"デバッグ開始\");\n        %s\n        Console.WriteLine(\"デバッグ終了\");\n    }\n}" code
+                
+                let! result = CodeExecutionService.ExecuteCSharpCode(debugCode)
+                Dispatcher.UIThread.Post(fun () ->
+                    if result.Success then
+                        this.StatusBarText <- ResourceManager.GetString("Status_DebugSuccess")
+                        if not (String.IsNullOrWhiteSpace(result.Output)) then
+                            let truncatedOutput = 
+                                if result.Output.Length > 200 then 
+                                    result.Output.Substring(0, 200) + "..."
+                                else 
+                                    result.Output
+                            this.StatusBarText <- ResourceManager.FormatString("Status_DebugOutput", [| truncatedOutput :> obj |])
+                    else
+                        let truncatedError = 
+                            if result.Error.Length > 200 then 
+                                result.Error.Substring(0, 200) + "..."
+                            else 
+                                result.Error
+                        this.StatusBarText <- ResourceManager.FormatString("Status_DebugError", [| truncatedError :> obj |])
+                )
+            with ex ->
+                Dispatcher.UIThread.Post(fun () ->
+                    this.StatusBarText <- ResourceManager.FormatString("Status_DebugFailed", [| ex.Message :> obj |])
+                )
+        }
+        |> ignore
+
+    member private this.DebugPythonCode(code: string) =
+        this.StatusBarText <- ResourceManager.GetString("Status_DebuggingPython")
+        task {
+            try
+                let debugCode = sprintf "print(\"デバッグ開始\")\n%s\nprint(\"デバッグ終了\")" code
+                
+                let! result = CodeExecutionService.ExecutePythonCode(debugCode)
+                Dispatcher.UIThread.Post(fun () ->
+                    if result.Success then
+                        this.StatusBarText <- ResourceManager.GetString("Status_DebugSuccess")
+                        if not (String.IsNullOrWhiteSpace(result.Output)) then
+                            let truncatedOutput = 
+                                if result.Output.Length > 200 then 
+                                    result.Output.Substring(0, 200) + "..."
+                                else 
+                                    result.Output
+                            this.StatusBarText <- ResourceManager.FormatString("Status_DebugOutput", [| truncatedOutput :> obj |])
+                    else
+                        let truncatedError = 
+                            if result.Error.Length > 200 then 
+                                result.Error.Substring(0, 200) + "..."
+                            else 
+                                result.Error
+                        this.StatusBarText <- ResourceManager.FormatString("Status_DebugError", [| truncatedError :> obj |])
+                )
+            with ex ->
+                Dispatcher.UIThread.Post(fun () ->
+                    this.StatusBarText <- ResourceManager.FormatString("Status_DebugFailed", [| ex.Message :> obj |])
+                )
+        }
+        |> ignore
+
+    member private this.DebugJavaScriptCode(code: string) =
+        this.StatusBarText <- ResourceManager.GetString("Status_DebuggingJavaScript")
+        task {
+            try
+                let debugCode = sprintf "console.log(\"デバッグ開始\");\n%s\nconsole.log(\"デバッグ終了\");" code
+                
+                let! result = CodeExecutionService.ExecuteJavaScriptCode(debugCode)
+                Dispatcher.UIThread.Post(fun () ->
+                    if result.Success then
+                        this.StatusBarText <- ResourceManager.GetString("Status_DebugSuccess")
+                        if not (String.IsNullOrWhiteSpace(result.Output)) then
+                            let truncatedOutput = 
+                                if result.Output.Length > 200 then 
+                                    result.Output.Substring(0, 200) + "..."
+                                else 
+                                    result.Output
+                            this.StatusBarText <- ResourceManager.FormatString("Status_DebugOutput", [| truncatedOutput :> obj |])
+                    else
+                        let truncatedError = 
+                            if result.Error.Length > 200 then 
+                                result.Error.Substring(0, 200) + "..."
+                            else 
+                                result.Error
+                        this.StatusBarText <- ResourceManager.FormatString("Status_DebugError", [| truncatedError :> obj |])
+                )
+            with ex ->
+                Dispatcher.UIThread.Post(fun () ->
+                    this.StatusBarText <- ResourceManager.FormatString("Status_DebugFailed", [| ex.Message :> obj |])
+                )
+        }
+        |> ignore
 
     member private this.SetLanguage(langCode: string) =
         this.CurrentLanguageCode <- langCode
         ResourceManager.SetLanguage(langCode)
         this.StatusBarText <- ResourceManager.FormatString("Status_LanguageChanged", [| langCode :> obj |])
 
-        // UIの言語を切り替えた後で、現在の状態を更新
+// UIの言語を切り替えた後で、現在の状態を更新
         this.CurrentFileName <- this.CurrentFileName
         this.CurrentLanguage <- this.CurrentLanguage
 
     member private this.DetectLanguage(filePath: string) =
-        let ext = Path.GetExtension(filePath).ToLower()
+        let ext = fileService.GetExtension(filePath)
         match ext with
         | ".fs" | ".fsx" ->
             this.CurrentLanguage <- "F#"
-            match editor with
-            | Some editor -> editor.SetLanguage("F#")
+            match editorService with
+            | Some service -> service.SetLanguage("F#")
             | None -> ()
         | ".cs" ->
             this.CurrentLanguage <- "C#"
-            match editor with
-            | Some editor -> editor.SetLanguage("C#")
+            match editorService with
+            | Some service -> service.SetLanguage("C#")
             | None -> ()
         | ".py" ->
             this.CurrentLanguage <- "Python"
-            match editor with
-            | Some editor -> editor.SetLanguage("Python")
+            match editorService with
+            | Some service -> service.SetLanguage("Python")
             | None -> ()
         | ".js" ->
             this.CurrentLanguage <- "JavaScript"
-            match editor with
-            | Some editor -> editor.SetLanguage("JavaScript")
+            match editorService with
+            | Some service -> service.SetLanguage("JavaScript")
             | None -> ()
         | ".ts" ->
             this.CurrentLanguage <- "TypeScript"
-            match editor with
-            | Some editor -> editor.SetLanguage("TypeScript")
+            match editorService with
+            | Some service -> service.SetLanguage("TypeScript")
             | None -> ()
         | ".html" | ".htm" ->
             this.CurrentLanguage <- "HTML"
-            match editor with
-            | Some editor -> editor.SetLanguage("HTML")
+            match editorService with
+            | Some service -> service.SetLanguage("HTML")
             | None -> ()
         | ".css" ->
             this.CurrentLanguage <- "CSS"
-            match editor with
-            | Some editor -> editor.SetLanguage("CSS")
+            match editorService with
+            | Some service -> service.SetLanguage("CSS")
             | None -> ()
         | ".json" ->
             this.CurrentLanguage <- "JSON"
-            match editor with
-            | Some editor -> editor.SetLanguage("JSON")
+            match editorService with
+            | Some service -> service.SetLanguage("JSON")
             | None -> ()
         | ".xml" ->
             this.CurrentLanguage <- "XML"
-            match editor with
-            | Some editor -> editor.SetLanguage("XML")
+            match editorService with
+            | Some service -> service.SetLanguage("XML")
             | None -> ()
         | _ ->
             this.CurrentLanguage <- "テキスト"
-            match editor with
-            | Some editor -> editor.SetLanguage("テキスト")
+            match editorService with
+            | Some service -> service.SetLanguage("テキスト")
             | None -> ()
 
     member private this.RunFSharpCode(code: string) =
-        this.StatusBarText <- "F#コードを実行中..."
+        this.StatusBarText <- ResourceManager.GetString("Status_ExecutingFSharp")
         task {
-            let! result = CodeExecutionService.ExecuteFSharpCode(code)
-            Dispatcher.UIThread.Post(fun () ->
-                if result.Success then
-                    this.StatusBarText <- "F#コードが正常に実行されました"
-                    if not (String.IsNullOrWhiteSpace(result.Output)) then
-                        this.StatusBarText <- sprintf "実行結果: %s" result.Output
-                else
-                    this.StatusBarText <- sprintf "実行エラー: %s" result.Error
-            )
+            try
+                let! result = CodeExecutionService.ExecuteFSharpCode(code)
+                do! Dispatcher.UIThread.InvokeAsync(fun () ->
+                    if result.Success then
+                        this.StatusBarText <- ResourceManager.GetString("Status_ExecutionSuccess")
+                        if not (String.IsNullOrWhiteSpace(result.Output)) then
+                            let truncatedOutput = 
+                                if result.Output.Length > 200 then 
+                                    result.Output.Substring(0, 200) + "..."
+                                else 
+                                    result.Output
+                            this.StatusBarText <- ResourceManager.FormatString("Status_ExecutionResult", [| truncatedOutput :> obj |])
+                    else
+                        let truncatedError = 
+                            if result.Error.Length > 200 then 
+                                result.Error.Substring(0, 200) + "..."
+                            else 
+                                result.Error
+                        this.StatusBarText <- ResourceManager.FormatString("Status_ExecutionError", [| truncatedError :> obj |])
+                )
+            with ex ->
+                do! Dispatcher.UIThread.InvokeAsync(fun () ->
+                    this.StatusBarText <- ResourceManager.FormatString("Status_ExecutionFailed", [| ex.Message :> obj |])
+                )
         }
         |> ignore
 
     member private this.RunCSharpCode(code: string) =
-        this.StatusBarText <- "C#コードを実行中..."
+        this.StatusBarText <- ResourceManager.GetString("Status_ExecutingCSharp")
         task {
-            let! result = CodeExecutionService.ExecuteCSharpCode(code)
-            Dispatcher.UIThread.Post(fun () ->
-                if result.Success then
-                    this.StatusBarText <- "C#コードが正常に実行されました"
-                    if not (String.IsNullOrWhiteSpace(result.Output)) then
-                        this.StatusBarText <- sprintf "実行結果: %s" result.Output
-                else
-                    this.StatusBarText <- sprintf "実行エラー: %s" result.Error
-            )
+            try
+                let! result = CodeExecutionService.ExecuteCSharpCode(code)
+                do! Dispatcher.UIThread.InvokeAsync(fun () ->
+                    if result.Success then
+                        this.StatusBarText <- ResourceManager.GetString("Status_ExecutionSuccess")
+                        if not (String.IsNullOrWhiteSpace(result.Output)) then
+                            let truncatedOutput = 
+                                if result.Output.Length > 200 then 
+                                    result.Output.Substring(0, 200) + "..."
+                                else 
+                                    result.Output
+                            this.StatusBarText <- ResourceManager.FormatString("Status_ExecutionResult", [| truncatedOutput :> obj |])
+                    else
+                        let truncatedError = 
+                            if result.Error.Length > 200 then 
+                                result.Error.Substring(0, 200) + "..."
+                            else 
+                                result.Error
+                        this.StatusBarText <- ResourceManager.FormatString("Status_ExecutionError", [| truncatedError :> obj |])
+                )
+            with ex ->
+                do! Dispatcher.UIThread.InvokeAsync(fun () ->
+                    this.StatusBarText <- ResourceManager.FormatString("Status_ExecutionFailed", [| ex.Message :> obj |])
+                )
         }
         |> ignore
 
     member private this.RunPythonCode(code: string) =
-        this.StatusBarText <- "Pythonコードを実行中..."
+        this.StatusBarText <- ResourceManager.GetString("Status_ExecutingPython")
         task {
-            let! result = CodeExecutionService.ExecutePythonCode(code)
-            Dispatcher.UIThread.Post(fun () ->
-                if result.Success then
-                    this.StatusBarText <- "Pythonコードが正常に実行されました"
-                    if not (String.IsNullOrWhiteSpace(result.Output)) then
-                        this.StatusBarText <- sprintf "実行結果: %s" result.Output
-                else
-                    this.StatusBarText <- sprintf "実行エラー: %s" result.Error
-            )
+            try
+                let! result = CodeExecutionService.ExecutePythonCode(code)
+                do! Dispatcher.UIThread.InvokeAsync(fun () ->
+                    if result.Success then
+                        this.StatusBarText <- ResourceManager.GetString("Status_ExecutionSuccess")
+                        if not (String.IsNullOrWhiteSpace(result.Output)) then
+                            let truncatedOutput = 
+                                if result.Output.Length > 200 then 
+                                    result.Output.Substring(0, 200) + "..."
+                                else 
+                                    result.Output
+                            this.StatusBarText <- ResourceManager.FormatString("Status_ExecutionResult", [| truncatedOutput :> obj |])
+                    else
+                        let truncatedError = 
+                            if result.Error.Length > 200 then 
+                                result.Error.Substring(0, 200) + "..."
+                            else 
+                                result.Error
+                        this.StatusBarText <- ResourceManager.FormatString("Status_ExecutionError", [| truncatedError :> obj |])
+                )
+            with ex ->
+                do! Dispatcher.UIThread.InvokeAsync(fun () ->
+                    this.StatusBarText <- ResourceManager.FormatString("Status_ExecutionFailed", [| ex.Message :> obj |])
+                )
         }
         |> ignore
 
     member private this.RunJavaScriptCode(code: string) =
-        this.StatusBarText <- "JavaScriptコードを実行中..."
+        this.StatusBarText <- ResourceManager.GetString("Status_ExecutingJavaScript")
         task {
-            let! result = CodeExecutionService.ExecuteJavaScriptCode(code)
-            Dispatcher.UIThread.Post(fun () ->
-                if result.Success then
-                    this.StatusBarText <- "JavaScriptコードが正常に実行されました"
-                    if not (String.IsNullOrWhiteSpace(result.Output)) then
-                        this.StatusBarText <- sprintf "実行結果: %s" result.Output
-                else
-                    this.StatusBarText <- sprintf "実行エラー: %s" result.Error
-            )
+            try
+                let! result = CodeExecutionService.ExecuteJavaScriptCode(code)
+                do! Dispatcher.UIThread.InvokeAsync(fun () ->
+                    if result.Success then
+                        this.StatusBarText <- ResourceManager.GetString("Status_ExecutionSuccess")
+                        if not (String.IsNullOrWhiteSpace(result.Output)) then
+                            let truncatedOutput = 
+                                if result.Output.Length > 200 then 
+                                    result.Output.Substring(0, 200) + "..."
+                                else 
+                                    result.Output
+                            this.StatusBarText <- ResourceManager.FormatString("Status_ExecutionResult", [| truncatedOutput :> obj |])
+                    else
+                        let truncatedError = 
+                            if result.Error.Length > 200 then 
+                                result.Error.Substring(0, 200) + "..."
+                            else 
+                                result.Error
+                        this.StatusBarText <- ResourceManager.FormatString("Status_ExecutionError", [| truncatedError :> obj |])
+                )
+            with ex ->
+                do! Dispatcher.UIThread.InvokeAsync(fun () ->
+                    this.StatusBarText <- ResourceManager.FormatString("Status_ExecutionFailed", [| ex.Message :> obj |])
+                )
         }
         |> ignore
 
     member private this.Undo() =
-        this.StatusBarText <- "元に戻す"
+        match editorService with
+        | Some service ->
+            if service.CanUndo then
+                service.Undo()
+                this.StatusBarText <- ResourceManager.GetString("Edit_Undo")
+            else
+                this.StatusBarText <- ResourceManager.GetString("Status_NothingToUndo")
+        | None ->
+            this.StatusBarText <- ResourceManager.GetString("Status_NoEditor")
 
     member private this.Redo() =
-        this.StatusBarText <- "やり直し"
+        match editorService with
+        | Some service ->
+            if service.CanRedo then
+                service.Redo()
+                this.StatusBarText <- ResourceManager.GetString("Edit_Redo")
+            else
+                this.StatusBarText <- ResourceManager.GetString("Status_NothingToRedo")
+        | None ->
+            this.StatusBarText <- ResourceManager.GetString("Status_NoEditor")
 
     member private this.Cut() =
-        this.StatusBarText <- "切り取り"
+        match editorService with
+        | Some service ->
+            if not (String.IsNullOrEmpty(service.SelectedText)) then
+                service.Cut()
+                this.StatusBarText <- ResourceManager.GetString("Edit_Cut")
+            else
+                this.StatusBarText <- ResourceManager.GetString("Status_NothingToCut")
+        | None ->
+            this.StatusBarText <- ResourceManager.GetString("Status_NoEditor")
 
     member private this.Copy() =
-        this.StatusBarText <- "コピー"
+        match editorService with
+        | Some service ->
+            if not (String.IsNullOrEmpty(service.SelectedText)) then
+                service.Copy()
+                this.StatusBarText <- ResourceManager.GetString("Edit_Copy")
+            else
+                this.StatusBarText <- ResourceManager.GetString("Status_NothingToCopy")
+        | None ->
+            this.StatusBarText <- ResourceManager.GetString("Status_NoEditor")
 
     member private this.Paste() =
-        this.StatusBarText <- "貼り付け"
+        match editorService with
+        | Some service ->
+            try
+                service.Paste()
+                this.StatusBarText <- ResourceManager.GetString("Edit_Paste")
+            with
+            | :? System.Runtime.InteropServices.COMException ->
+                this.StatusBarText <- ResourceManager.GetString("Status_ClipboardEmpty")
+            | ex ->
+                this.StatusBarText <- ResourceManager.FormatString("Status_PasteError", [| ex.Message :> obj |])
+        | None ->
+            this.StatusBarText <- ResourceManager.GetString("Status_NoEditor")
 
     member private this.Delete() =
-        this.StatusBarText <- "削除"
+        match editorService with
+        | Some service ->
+            if not (String.IsNullOrEmpty(service.SelectedText)) then
+                service.SelectedText <- ""
+                this.StatusBarText <- ResourceManager.GetString("Edit_Delete")
+            else
+                this.StatusBarText <- ResourceManager.GetString("Status_NothingToDelete")
+        | None ->
+            this.StatusBarText <- ResourceManager.GetString("Status_NoEditor")
 
     member private this.SelectAll() =
-        this.StatusBarText <- "すべて選択"
+        match editorService with
+        | Some service ->
+            if not (String.IsNullOrEmpty(service.Text)) then
+                service.SelectAll()
+                this.StatusBarText <- ResourceManager.GetString("Edit_SelectAll")
+            else
+                this.StatusBarText <- ResourceManager.GetString("Status_NothingToSelect")
+        | None ->
+            this.StatusBarText <- ResourceManager.GetString("Status_NoEditor")
 
     member this.SetFileOperations(openFunc, saveFunc) =
         openFileDialogFunc <- openFunc
         saveFileDialogFunc <- saveFunc
 
     member this.SetEditor(editorControl: SyntaxHighlightEditor) =
-        editor <- Some editorControl
-        editorControl.SetLanguage(this.CurrentLanguage)
-        editorControl.Text <- this.CurrentFileContent
+        editorService <- Some(editorControl :> IEditorService)
+        let service = editorControl :> IEditorService
+        service.SetLanguage(this.CurrentLanguage)
+        service.Text <- this.CurrentFileContent
 
     member private this.ShowOpenFileDialog() =
         async {

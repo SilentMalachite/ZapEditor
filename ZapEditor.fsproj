@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net9.0</TargetFramework>
@@ -7,8 +7,11 @@
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
   </PropertyGroup>
 
-  <ItemGroup>
+<ItemGroup>
+    <Compile Include="Services/IEditorService.fs" />
+    <Compile Include="Services/IFileService.fs" />
     <Compile Include="Services/ResourceManager.fs" />
+    <Compile Include="Services/FileService.fs" />
     <Compile Include="Services/CodeExecutionService.fs" />
     <Compile Include="Controls/SyntaxHighlightEditor.axaml.fs" />
     <Compile Include="ViewModels/MainWindowViewModel.fs" />
