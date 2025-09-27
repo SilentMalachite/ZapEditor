@@ -27,7 +27,7 @@ type RelayCommand(action: Action<obj>, canExecute: Func<obj, bool>) =
 
     new(action) = RelayCommand(action, null)
 
-type MainWindowViewModel(?fileService: IFileService, ?editorService: IEditorService) as this =
+type MainWindowViewModel(?fileService: IFileService, ?editorService: IEditorService) =
     do ()
 
     let fileService = defaultArg fileService (FileService() :> IFileService)
@@ -40,6 +40,7 @@ type MainWindowViewModel(?fileService: IFileService, ?editorService: IEditorServ
     let mutable currentLanguageCode = "ja"
     let mutable openFileDialogFunc: unit -> Task<string option> = fun () -> Task.FromResult<string option>(None)
     let mutable saveFileDialogFunc: unit -> Task<string option> = fun () -> Task.FromResult<string option>(None)
+    let availableLanguages = [| "自動検出"; "F#"; "C#"; "Python"; "JavaScript"; "TypeScript"; "HTML"; "CSS"; "JSON"; "XML"; "テキスト" |]
 
     let propertyChanged = Event<PropertyChangedEventHandler, PropertyChangedEventArgs>()
 
@@ -94,6 +95,8 @@ type MainWindowViewModel(?fileService: IFileService, ?editorService: IEditorServ
                 currentFilePath <- value
                 this.NotifyPropertyChanged(nameof this.CurrentFilePath)
 
+    member this.AvailableLanguages = availableLanguages
+
     member this.NewFileCommand = RelayCommand(fun _ -> this.NewFile())
     member this.OpenFileCommand = RelayCommand(fun _ -> this.OpenFile())
     member this.SaveFileCommand = RelayCommand(fun _ -> this.SaveFile())
@@ -102,6 +105,7 @@ type MainWindowViewModel(?fileService: IFileService, ?editorService: IEditorServ
     member this.RunCodeCommand = RelayCommand(fun _ -> this.RunCode())
     member this.DebugCodeCommand = RelayCommand(fun _ -> this.DebugCode())
     member this.SetLanguageCommand = RelayCommand(fun param -> this.SetLanguage(param :?> string))
+    member this.LanguageChangedCommand = RelayCommand(fun param -> this.OnLanguageChanged(param :?> string))
 
     member this.UndoCommand = RelayCommand(fun _ -> this.Undo())
     member this.RedoCommand = RelayCommand(fun _ -> this.Redo())
@@ -125,7 +129,31 @@ type MainWindowViewModel(?fileService: IFileService, ?editorService: IEditorServ
             let! result = this.ShowOpenFileDialog()
             match result with
             | Some path ->
-                this.StatusBarText <- "File opened"
+                try
+                    let! content = fileService.ReadFile path |> Async.AwaitTask
+                    this.CurrentFileContent <- content
+                    this.CurrentFileName <- fileService.GetFileName(path)
+                    this.CurrentFilePath <- Some path
+                    this.DetectLanguage(path)
+                    match editorService with
+                    | Some service -> 
+                        service.Text <- content
+                        service.SetLanguage(this.CurrentLanguage)
+                    | None -> ()
+                    this.StatusBarText <- ResourceManager.FormatString("Status_FileOpened", [| this.CurrentFileName :> obj |])
+                with
+                | :? UnauthorizedAccessException ->
+                    this.StatusBarText <- ResourceManager.GetString("Status_FileAccessDenied")
+                | :? PathTooLongException ->
+                    this.StatusBarText <- ResourceManager.GetString("Status_PathTooLong")
+                | :? DirectoryNotFoundException ->
+                    this.StatusBarText <- ResourceManager.GetString("Status_DirectoryNotFound")
+                | :? SecurityException ->
+                    this.StatusBarText <- ResourceManager.GetString("Status_SecurityError")
+                | :? IOException as ex when ex.Message.Contains("使用中") ->
+                    this.StatusBarText <- ResourceManager.GetString("Status_FileInUse")
+                | ex ->
+                    this.StatusBarText <- ResourceManager.FormatString("Status_FileOpenError", [| ex.Message :> obj |])
             | None -> ()
         } |> Async.Start
 
@@ -377,6 +405,14 @@ type MainWindowViewModel(?fileService: IFileService, ?editorService: IEditorServ
 // UIの言語を切り替えた後で、現在の状態を更新
         this.CurrentFileName <- this.CurrentFileName
         this.CurrentLanguage <- this.CurrentLanguage
+
+    member private this.OnLanguageChanged(language: string) =
+        if language <> "自動検出" then
+            this.CurrentLanguage <- language
+            match editorService with
+            | Some service -> service.SetLanguage(language)
+            | None -> ()
+            this.StatusBarText <- ResourceManager.FormatString("Status_LanguageChanged", [| language :> obj |])
 
     member private this.DetectLanguage(filePath: string) =
         let ext = fileService.GetExtension(filePath)

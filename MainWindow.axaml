@@ -74,18 +74,9 @@
                 <Button Content="実行" Command="{Binding RunCodeCommand}" Margin="2" Width="60" />
                 <Button Content="デバッグ" Command="{Binding DebugCodeCommand}" Margin="2" Width="60" />
                 <Separator Margin="5" />
-                <ComboBox Name="LanguageSelector" Width="120" Margin="2">
-                    <ComboBoxItem Content="自動検出" IsSelected="True" />
-                    <ComboBoxItem Content="F#" />
-                    <ComboBoxItem Content="C#" />
-                    <ComboBoxItem Content="Python" />
-                    <ComboBoxItem Content="JavaScript" />
-                    <ComboBoxItem Content="TypeScript" />
-                    <ComboBoxItem Content="HTML" />
-                    <ComboBoxItem Content="CSS" />
-                    <ComboBoxItem Content="JSON" />
-                    <ComboBoxItem Content="XML" />
-                </ComboBox>
+                <ComboBox Name="LanguageSelector" Width="120" Margin="2"
+                          ItemsSource="{Binding AvailableLanguages}"
+                          SelectedItem="{Binding CurrentLanguage}" />
             </StackPanel>
 
             <!-- テキストエディタ -->
