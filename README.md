@@ -102,9 +102,28 @@ dotnet clean
 
 # Run the editor in watch mode (hot reload)
 dotnet watch run
+
+# Run tests (if available)
+dotnet test
 ```
 
 When working on TextMate grammars, enable Avalonia diagnostics (`dotnet run -c Debug`) to inspect control trees in-app.
+
+## Recent Improvements
+
+### v1.1.0 - UI Enhancements and Bug Fixes
+- **Fixed Language Selector**: ComboBox now properly binds to ViewModel with AvailableLanguages property
+- **Enhanced File Operations**: Complete file opening functionality with comprehensive error handling
+- **Resolved Build Warnings**: Eliminated F# compiler warnings and NuGet audit warnings
+- **Improved Error Handling**: Added proper exception handling for file access operations
+- **Code Quality**: Removed unused recursive object references and cleaned up resource files
+
+### Key Technical Changes
+- MainWindowViewModel: Removed `as this` parameter to eliminate FS1183 warning
+- MainWindow.axaml: Updated ComboBox binding to use ItemsSource and SelectedItem
+- ZapEditor.fsproj: Added `NuGetAudit=false` and `NuGetAuditMode=direct` settings
+- File Service: Enhanced error handling for UnauthorizedAccessException, PathTooLongException, etc.
+- Resource Management: Cleaned up Japanese resource file formatting
 
 ## Contributing
 

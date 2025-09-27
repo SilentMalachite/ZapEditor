@@ -31,7 +31,32 @@ ZapEditor is a cross-platform code editor built with F# and Avalonia UI. It feat
 - Clean: `dotnet clean`
 - Restore packages: `dotnet restore`
 
+## Recent Fixes and Improvements
+
+### Build System
+- **NuGet Audit Warnings**: Added `<NuGetAudit>false</NuGetAudit>` and `<NuGetAuditMode>direct</NuGetAuditMode>` to project file
+- **F# Compiler Warnings**: Removed unused `as this` parameter from MainWindowViewModel constructor
+
+### UI Binding Issues
+- **Language Selector**: Fixed ComboBox binding by implementing `AvailableLanguages` property in ViewModel
+- **Data Binding**: Updated MainWindow.axaml to use proper `ItemsSource` and `SelectedItem` bindings
+- **Language Changes**: Added `OnLanguageChanged` method for manual language selection
+
+### File Operations
+- **File Opening**: Implemented complete file reading functionality with proper error handling
+- **Exception Handling**: Added comprehensive exception handling for:
+  - UnauthorizedAccessException
+  - PathTooLongException
+  - DirectoryNotFoundException
+  - SecurityException
+  - IOException (file in use detection)
+
+### Code Quality
+- **Resource Management**: Cleaned up Japanese resource file formatting and removed duplicate entries
+- **Error Messages**: Enhanced status messages for better user feedback
+
 ## Notes
 - Uses compiled bindings by default for better performance
 - Debug builds include Avalonia DevTools
 - Targets Windows executable with COM interop support
+- Network-independent builds (NuGet audit disabled)
