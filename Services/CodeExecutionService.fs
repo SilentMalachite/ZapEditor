@@ -32,19 +32,26 @@ type CodeExecutionService() =
                             | None -> executable
             
             if not (File.Exists(path)) then
-                failwithf "実行可能ファイルが見つかりません: %s" executable
+                failwith (ResourceManager.FormatString("Error_ExecutableNotFound", [| executable :> obj |]))
             
             let fullPath = Path.GetFullPath(path)
-            if not (fullPath.StartsWith(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles)) ||
-                    fullPath.StartsWith(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86)) ||
-                    fullPath.StartsWith(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)) ||
-                    fullPath.StartsWith("/usr/bin") || fullPath.StartsWith("/usr/local/bin")) then
-                failwithf "安全でない実行パスです: %s" fullPath
+            let safePaths = [
+                Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles)
+                Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86)
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)
+                "/usr/bin"
+                "/usr/local/bin"
+                "/opt/homebrew/bin"
+            ]
+            let isSafe = safePaths |> List.exists (fun safePath -> 
+                not (String.IsNullOrEmpty(safePath)) && fullPath.StartsWith(safePath))
+            if not isSafe then
+                failwith (ResourceManager.FormatString("Error_UnsafePath", [| fullPath :> obj |]))
             
             path
         with
-        | :? SecurityException -> failwithf "実行可能ファイルへのアクセス権限がありません: %s" executable
-        | ex -> failwithf "実行可能ファイルの検証に失敗しました: %s" ex.Message
+        | :? SecurityException -> failwith (ResourceManager.FormatString("Error_AccessDenied", [| executable :> obj |]))
+        | ex -> failwith (ResourceManager.FormatString("Error_ValidationFailed", [| ex.Message :> obj |]))
 
     static member private CreateSecureTempFile(extension: string, content: string) =
         let tempDir = Path.GetTempPath()
@@ -57,12 +64,26 @@ type CodeExecutionService() =
         with
         | ex ->
             if File.Exists(tempFile) then
-                try File.Delete(tempFile) with | _ -> ()
+                try 
+                    File.Delete(tempFile)
+                with 
+                | deleteEx -> 
+                    // Log the delete failure but don't suppress the original exception
+                    eprintfn "%s" (ResourceManager.FormatString("Error_TempFileDeleteFailed", [| tempFile :> obj; deleteEx.Message :> obj |]))
             reraise()
+    
+    static member private DeleteTempFileSafely(tempFile: string) =
+        if File.Exists(tempFile) then
+            try 
+                File.Delete(tempFile)
+            with 
+            | ex -> 
+                eprintfn "一時ファイルの削除に失敗: %s - %s" tempFile ex.Message
 
-    static member private ExecuteProcessSafely(executable: string, arguments: string, ?workingDirectory: string) =
+    static member private ExecuteProcessSafely(executable: string, arguments: string, ?workingDirectory: string, ?timeoutMs: int) =
         task {
             let validatedPath = CodeExecutionService.ValidateExecutablePath(executable)
+            let timeout = defaultArg timeoutMs 30000 // 30 seconds default
             
             let startInfo = ProcessStartInfo(
                 FileName = validatedPath,
@@ -82,21 +103,41 @@ type CodeExecutionService() =
             try
                 let started = proc.Start()
                 if not started then
-                    failwith "プロセスを開始できませんでした"
+                    failwith (ResourceManager.GetString("Error_ProcessStartFailed"))
                 
-                let output = proc.StandardOutput.ReadToEnd()
-                let error = proc.StandardError.ReadToEnd()
+                // Read output asynchronously to prevent deadlocks
+                let outputTask = proc.StandardOutput.ReadToEndAsync()
+                let errorTask = proc.StandardError.ReadToEndAsync()
                 
-                do! proc.WaitForExitAsync()
+                let! completed = proc.WaitForExitAsync().WaitAsync(TimeSpan.FromMilliseconds(float timeout))
                 
-                return
-                    { Success = proc.ExitCode = 0
-                      Output = output
-                      Error = error
-                      ExitCode = proc.ExitCode }
+                let! output = outputTask
+                let! error = errorTask
+                
+                if proc.HasExited then
+                    return
+                        { Success = proc.ExitCode = 0
+                          Output = output
+                          Error = error
+                          ExitCode = proc.ExitCode }
+                else
+                    // Timeout occurred
+                    try proc.Kill(true) with | _ -> ()
+                    return
+                        { Success = false
+                          Output = output
+                          Error = ResourceManager.GetString("Error_ExecutionTimeout")
+                          ExitCode = -1 }
             with
+            | :? TimeoutException ->
+                try proc.Kill(true) with | _ -> ()
+                return
+                    { Success = false
+                      Output = ""
+                      Error = "実行がタイムアウトしました"
+                      ExitCode = -1 }
             | ex ->
-                try proc.Kill() with | _ -> ()
+                try proc.Kill(true) with | _ -> ()
                 return! Task.FromException<CodeExecutionResult>(ex)
         }
 
@@ -106,8 +147,7 @@ type CodeExecutionService() =
             try
                 return! CodeExecutionService.ExecuteProcessSafely("python3", tempFile, ?workingDirectory = workingDirectory)
             finally
-                if File.Exists(tempFile) then
-                    try File.Delete(tempFile) with | _ -> ()
+                CodeExecutionService.DeleteTempFileSafely(tempFile)
         }
 
     static member ExecuteFSharpCode(code: string, ?workingDirectory: string) : Task<CodeExecutionResult> =
@@ -116,19 +156,19 @@ type CodeExecutionService() =
             try
                 return! CodeExecutionService.ExecuteProcessSafely("dotnet", sprintf "fsi \"%s\"" tempFile, ?workingDirectory = workingDirectory)
             finally
-                if File.Exists(tempFile) then
-                    try File.Delete(tempFile) with | _ -> ()
+                CodeExecutionService.DeleteTempFileSafely(tempFile)
         }
 
     static member ExecuteCSharpCode(code: string, ?workingDirectory: string) : Task<CodeExecutionResult> =
         task {
-            let tempFile = CodeExecutionService.CreateSecureTempFile(".cs", 
-                sprintf "using System;\n\npublic class Program\n{\n    public static void Main()\n    {\n        %s\n    }\n}" code)
+            // Wrap code in a complete program with top-level statements
+            let wrappedCode = sprintf "using System;\nusing System.Collections.Generic;\nusing System.Linq;\nusing System.Text;\n\n%s" code
+            let tempFile = CodeExecutionService.CreateSecureTempFile(".csx", wrappedCode)
             try
-                return! CodeExecutionService.ExecuteProcessSafely("dotnet", sprintf "run --project \"%s\"" tempFile, ?workingDirectory = workingDirectory)
+                // Use dotnet-script for C# script execution
+                return! CodeExecutionService.ExecuteProcessSafely("dotnet", sprintf "script \"%s\"" tempFile, ?workingDirectory = workingDirectory)
             finally
-                if File.Exists(tempFile) then
-                    try File.Delete(tempFile) with | _ -> ()
+                CodeExecutionService.DeleteTempFileSafely(tempFile)
         }
 
     static member ExecuteJavaScriptCode(code: string, ?workingDirectory: string) : Task<CodeExecutionResult> =
@@ -137,6 +177,5 @@ type CodeExecutionService() =
             try
                 return! CodeExecutionService.ExecuteProcessSafely("node", sprintf "\"%s\"" tempFile, ?workingDirectory = workingDirectory)
             finally
-                if File.Exists(tempFile) then
-                    try File.Delete(tempFile) with | _ -> ()
+                CodeExecutionService.DeleteTempFileSafely(tempFile)
         }

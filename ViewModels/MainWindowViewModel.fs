@@ -40,7 +40,17 @@ type MainWindowViewModel(?fileService: IFileService, ?editorService: IEditorServ
     let mutable currentLanguageCode = "ja"
     let mutable openFileDialogFunc: unit -> Task<string option> = fun () -> Task.FromResult<string option>(None)
     let mutable saveFileDialogFunc: unit -> Task<string option> = fun () -> Task.FromResult<string option>(None)
-    let availableLanguages = [| "自動検出"; "F#"; "C#"; "Python"; "JavaScript"; "TypeScript"; "HTML"; "CSS"; "JSON"; "XML"; "テキスト" |]
+    let mutable availableLanguages = [| 
+        ResourceManager.GetString("Language_AutoDetect")
+        ResourceManager.GetString("Language_FSharp")
+        ResourceManager.GetString("Language_CSharp")
+        ResourceManager.GetString("Language_Python")
+        ResourceManager.GetString("Language_JavaScript")
+        ResourceManager.GetString("Language_TypeScript")
+        ResourceManager.GetString("Language_HTML")
+        ResourceManager.GetString("Language_CSS")
+        ResourceManager.GetString("Language_JSON")
+        ResourceManager.GetString("Language_XML") |]
 
     let propertyChanged = Event<PropertyChangedEventHandler, PropertyChangedEventArgs>()
 
@@ -96,6 +106,20 @@ type MainWindowViewModel(?fileService: IFileService, ?editorService: IEditorServ
                 this.NotifyPropertyChanged(nameof this.CurrentFilePath)
 
     member this.AvailableLanguages = availableLanguages
+
+    member private this.UpdateLanguageList() =
+        availableLanguages <- [| 
+            ResourceManager.GetString("Language_AutoDetect")
+            ResourceManager.GetString("Language_FSharp")
+            ResourceManager.GetString("Language_CSharp")
+            ResourceManager.GetString("Language_Python")
+            ResourceManager.GetString("Language_JavaScript")
+            ResourceManager.GetString("Language_TypeScript")
+            ResourceManager.GetString("Language_HTML")
+            ResourceManager.GetString("Language_CSS")
+            ResourceManager.GetString("Language_JSON")
+            ResourceManager.GetString("Language_XML") |]
+        this.NotifyPropertyChanged(nameof this.AvailableLanguages)
 
     member this.NewFileCommand = RelayCommand(fun _ -> this.NewFile())
     member this.OpenFileCommand = RelayCommand(fun _ -> this.OpenFile())
@@ -269,140 +293,72 @@ type MainWindowViewModel(?fileService: IFileService, ?editorService: IEditorServ
             | "JavaScript" -> this.DebugJavaScriptCode(content)
             | _ -> this.StatusBarText <- ResourceManager.GetString("Status_UnsupportedLanguage")
 
-    member private this.DebugFSharpCode(code: string) =
-        this.StatusBarText <- ResourceManager.GetString("Status_DebuggingFSharp")
+    member private this.TruncateOutput(text: string, maxLength: int) =
+        if text.Length > maxLength then 
+            text.Substring(0, maxLength) + "..."
+        else 
+            text
+
+    member private this.ExecuteDebugCode(code: string, statusKey: string, wrapCode: string -> string, executor: string -> Task<CodeExecutionResult>) =
+        this.StatusBarText <- ResourceManager.GetString(statusKey)
         task {
             try
-                let debugCode = sprintf "#debug\nprintfn \"デバッグ開始\"\n%s\nprintfn \"デバッグ終了\"" code
-                
-                let! result = CodeExecutionService.ExecuteFSharpCode(debugCode)
-                do! Dispatcher.UIThread.InvokeAsync(fun () ->
+                let debugCode = wrapCode code
+                let! result = executor debugCode
+                Dispatcher.UIThread.Post(fun () ->
                     if result.Success then
                         this.StatusBarText <- ResourceManager.GetString("Status_DebugSuccess")
                         if not (String.IsNullOrWhiteSpace(result.Output)) then
-                            let truncatedOutput = 
-                                if result.Output.Length > 200 then 
-                                    result.Output.Substring(0, 200) + "..."
-                                else 
-                                    result.Output
-                            this.StatusBarText <- ResourceManager.FormatString("Status_DebugOutput", [| truncatedOutput :> obj |])
+                            let output = this.TruncateOutput(result.Output, 200)
+                            this.StatusBarText <- ResourceManager.FormatString("Status_DebugOutput", [| output :> obj |])
                     else
-                        let truncatedError = 
-                            if result.Error.Length > 200 then 
-                                result.Error.Substring(0, 200) + "..."
-                            else 
-                                result.Error
-                        this.StatusBarText <- ResourceManager.FormatString("Status_DebugError", [| truncatedError :> obj |])
+                        let error = this.TruncateOutput(result.Error, 200)
+                        this.StatusBarText <- ResourceManager.FormatString("Status_DebugError", [| error :> obj |])
                 )
             with ex ->
-                do! Dispatcher.UIThread.InvokeAsync(fun () ->
+                Dispatcher.UIThread.Post(fun () ->
                     this.StatusBarText <- ResourceManager.FormatString("Status_DebugFailed", [| ex.Message :> obj |])
                 )
         }
         |> ignore
+
+    member private this.DebugFSharpCode(code: string) =
+        this.ExecuteDebugCode(
+            code,
+            "Status_DebuggingFSharp",
+            (fun c -> sprintf "#debug\nprintfn \"デバッグ開始\"\n%s\nprintfn \"デバッグ終了\"" c),
+            CodeExecutionService.ExecuteFSharpCode
+        )
 
     member private this.DebugCSharpCode(code: string) =
-        this.StatusBarText <- ResourceManager.GetString("Status_DebuggingCSharp")
-        task {
-            try
-                let debugCode = sprintf "using System;\n\npublic class Program\n{\n    public static void Main()\n    {\n        Console.WriteLine(\"デバッグ開始\");\n        %s\n        Console.WriteLine(\"デバッグ終了\");\n    }\n}" code
-                
-                let! result = CodeExecutionService.ExecuteCSharpCode(debugCode)
-                Dispatcher.UIThread.Post(fun () ->
-                    if result.Success then
-                        this.StatusBarText <- ResourceManager.GetString("Status_DebugSuccess")
-                        if not (String.IsNullOrWhiteSpace(result.Output)) then
-                            let truncatedOutput = 
-                                if result.Output.Length > 200 then 
-                                    result.Output.Substring(0, 200) + "..."
-                                else 
-                                    result.Output
-                            this.StatusBarText <- ResourceManager.FormatString("Status_DebugOutput", [| truncatedOutput :> obj |])
-                    else
-                        let truncatedError = 
-                            if result.Error.Length > 200 then 
-                                result.Error.Substring(0, 200) + "..."
-                            else 
-                                result.Error
-                        this.StatusBarText <- ResourceManager.FormatString("Status_DebugError", [| truncatedError :> obj |])
-                )
-            with ex ->
-                Dispatcher.UIThread.Post(fun () ->
-                    this.StatusBarText <- ResourceManager.FormatString("Status_DebugFailed", [| ex.Message :> obj |])
-                )
-        }
-        |> ignore
+        this.ExecuteDebugCode(
+            code,
+            "Status_DebuggingCSharp",
+            (fun c -> sprintf "using System;\n\npublic class Program\n{\n    public static void Main()\n    {\n        Console.WriteLine(\"デバッグ開始\");\n        %s\n        Console.WriteLine(\"デバッグ終了\");\n    }\n}" c),
+            CodeExecutionService.ExecuteCSharpCode
+        )
 
     member private this.DebugPythonCode(code: string) =
-        this.StatusBarText <- ResourceManager.GetString("Status_DebuggingPython")
-        task {
-            try
-                let debugCode = sprintf "print(\"デバッグ開始\")\n%s\nprint(\"デバッグ終了\")" code
-                
-                let! result = CodeExecutionService.ExecutePythonCode(debugCode)
-                Dispatcher.UIThread.Post(fun () ->
-                    if result.Success then
-                        this.StatusBarText <- ResourceManager.GetString("Status_DebugSuccess")
-                        if not (String.IsNullOrWhiteSpace(result.Output)) then
-                            let truncatedOutput = 
-                                if result.Output.Length > 200 then 
-                                    result.Output.Substring(0, 200) + "..."
-                                else 
-                                    result.Output
-                            this.StatusBarText <- ResourceManager.FormatString("Status_DebugOutput", [| truncatedOutput :> obj |])
-                    else
-                        let truncatedError = 
-                            if result.Error.Length > 200 then 
-                                result.Error.Substring(0, 200) + "..."
-                            else 
-                                result.Error
-                        this.StatusBarText <- ResourceManager.FormatString("Status_DebugError", [| truncatedError :> obj |])
-                )
-            with ex ->
-                Dispatcher.UIThread.Post(fun () ->
-                    this.StatusBarText <- ResourceManager.FormatString("Status_DebugFailed", [| ex.Message :> obj |])
-                )
-        }
-        |> ignore
+        this.ExecuteDebugCode(
+            code,
+            "Status_DebuggingPython",
+            (fun c -> sprintf "print(\"デバッグ開始\")\n%s\nprint(\"デバッグ終了\")" c),
+            CodeExecutionService.ExecutePythonCode
+        )
 
     member private this.DebugJavaScriptCode(code: string) =
-        this.StatusBarText <- ResourceManager.GetString("Status_DebuggingJavaScript")
-        task {
-            try
-                let debugCode = sprintf "console.log(\"デバッグ開始\");\n%s\nconsole.log(\"デバッグ終了\");" code
-                
-                let! result = CodeExecutionService.ExecuteJavaScriptCode(debugCode)
-                Dispatcher.UIThread.Post(fun () ->
-                    if result.Success then
-                        this.StatusBarText <- ResourceManager.GetString("Status_DebugSuccess")
-                        if not (String.IsNullOrWhiteSpace(result.Output)) then
-                            let truncatedOutput = 
-                                if result.Output.Length > 200 then 
-                                    result.Output.Substring(0, 200) + "..."
-                                else 
-                                    result.Output
-                            this.StatusBarText <- ResourceManager.FormatString("Status_DebugOutput", [| truncatedOutput :> obj |])
-                    else
-                        let truncatedError = 
-                            if result.Error.Length > 200 then 
-                                result.Error.Substring(0, 200) + "..."
-                            else 
-                                result.Error
-                        this.StatusBarText <- ResourceManager.FormatString("Status_DebugError", [| truncatedError :> obj |])
-                )
-            with ex ->
-                Dispatcher.UIThread.Post(fun () ->
-                    this.StatusBarText <- ResourceManager.FormatString("Status_DebugFailed", [| ex.Message :> obj |])
-                )
-        }
-        |> ignore
+        this.ExecuteDebugCode(
+            code,
+            "Status_DebuggingJavaScript",
+            (fun c -> sprintf "console.log(\"デバッグ開始\");\n%s\nconsole.log(\"デバッグ終了\");" c),
+            CodeExecutionService.ExecuteJavaScriptCode
+        )
 
     member private this.SetLanguage(langCode: string) =
         this.CurrentLanguageCode <- langCode
         ResourceManager.SetLanguage(langCode)
+        this.UpdateLanguageList()
         this.StatusBarText <- ResourceManager.FormatString("Status_LanguageChanged", [| langCode :> obj |])
-
-// UIの言語を切り替えた後で、現在の状態を更新
         this.CurrentFileName <- this.CurrentFileName
         this.CurrentLanguage <- this.CurrentLanguage
 
@@ -468,28 +424,20 @@ type MainWindowViewModel(?fileService: IFileService, ?editorService: IEditorServ
             | Some service -> service.SetLanguage("テキスト")
             | None -> ()
 
-    member private this.RunFSharpCode(code: string) =
-        this.StatusBarText <- ResourceManager.GetString("Status_ExecutingFSharp")
+    member private this.ExecuteCode(code: string, statusKey: string, executor: string -> Task<CodeExecutionResult>) =
+        this.StatusBarText <- ResourceManager.GetString(statusKey)
         task {
             try
-                let! result = CodeExecutionService.ExecuteFSharpCode(code)
+                let! result = executor code
                 do! Dispatcher.UIThread.InvokeAsync(fun () ->
                     if result.Success then
                         this.StatusBarText <- ResourceManager.GetString("Status_ExecutionSuccess")
                         if not (String.IsNullOrWhiteSpace(result.Output)) then
-                            let truncatedOutput = 
-                                if result.Output.Length > 200 then 
-                                    result.Output.Substring(0, 200) + "..."
-                                else 
-                                    result.Output
-                            this.StatusBarText <- ResourceManager.FormatString("Status_ExecutionResult", [| truncatedOutput :> obj |])
+                            let output = this.TruncateOutput(result.Output, 200)
+                            this.StatusBarText <- ResourceManager.FormatString("Status_ExecutionResult", [| output :> obj |])
                     else
-                        let truncatedError = 
-                            if result.Error.Length > 200 then 
-                                result.Error.Substring(0, 200) + "..."
-                            else 
-                                result.Error
-                        this.StatusBarText <- ResourceManager.FormatString("Status_ExecutionError", [| truncatedError :> obj |])
+                        let error = this.TruncateOutput(result.Error, 200)
+                        this.StatusBarText <- ResourceManager.FormatString("Status_ExecutionError", [| error :> obj |])
                 )
             with ex ->
                 do! Dispatcher.UIThread.InvokeAsync(fun () ->
@@ -497,96 +445,18 @@ type MainWindowViewModel(?fileService: IFileService, ?editorService: IEditorServ
                 )
         }
         |> ignore
+
+    member private this.RunFSharpCode(code: string) =
+        this.ExecuteCode(code, "Status_ExecutingFSharp", CodeExecutionService.ExecuteFSharpCode)
 
     member private this.RunCSharpCode(code: string) =
-        this.StatusBarText <- ResourceManager.GetString("Status_ExecutingCSharp")
-        task {
-            try
-                let! result = CodeExecutionService.ExecuteCSharpCode(code)
-                do! Dispatcher.UIThread.InvokeAsync(fun () ->
-                    if result.Success then
-                        this.StatusBarText <- ResourceManager.GetString("Status_ExecutionSuccess")
-                        if not (String.IsNullOrWhiteSpace(result.Output)) then
-                            let truncatedOutput = 
-                                if result.Output.Length > 200 then 
-                                    result.Output.Substring(0, 200) + "..."
-                                else 
-                                    result.Output
-                            this.StatusBarText <- ResourceManager.FormatString("Status_ExecutionResult", [| truncatedOutput :> obj |])
-                    else
-                        let truncatedError = 
-                            if result.Error.Length > 200 then 
-                                result.Error.Substring(0, 200) + "..."
-                            else 
-                                result.Error
-                        this.StatusBarText <- ResourceManager.FormatString("Status_ExecutionError", [| truncatedError :> obj |])
-                )
-            with ex ->
-                do! Dispatcher.UIThread.InvokeAsync(fun () ->
-                    this.StatusBarText <- ResourceManager.FormatString("Status_ExecutionFailed", [| ex.Message :> obj |])
-                )
-        }
-        |> ignore
+        this.ExecuteCode(code, "Status_ExecutingCSharp", CodeExecutionService.ExecuteCSharpCode)
 
     member private this.RunPythonCode(code: string) =
-        this.StatusBarText <- ResourceManager.GetString("Status_ExecutingPython")
-        task {
-            try
-                let! result = CodeExecutionService.ExecutePythonCode(code)
-                do! Dispatcher.UIThread.InvokeAsync(fun () ->
-                    if result.Success then
-                        this.StatusBarText <- ResourceManager.GetString("Status_ExecutionSuccess")
-                        if not (String.IsNullOrWhiteSpace(result.Output)) then
-                            let truncatedOutput = 
-                                if result.Output.Length > 200 then 
-                                    result.Output.Substring(0, 200) + "..."
-                                else 
-                                    result.Output
-                            this.StatusBarText <- ResourceManager.FormatString("Status_ExecutionResult", [| truncatedOutput :> obj |])
-                    else
-                        let truncatedError = 
-                            if result.Error.Length > 200 then 
-                                result.Error.Substring(0, 200) + "..."
-                            else 
-                                result.Error
-                        this.StatusBarText <- ResourceManager.FormatString("Status_ExecutionError", [| truncatedError :> obj |])
-                )
-            with ex ->
-                do! Dispatcher.UIThread.InvokeAsync(fun () ->
-                    this.StatusBarText <- ResourceManager.FormatString("Status_ExecutionFailed", [| ex.Message :> obj |])
-                )
-        }
-        |> ignore
+        this.ExecuteCode(code, "Status_ExecutingPython", CodeExecutionService.ExecutePythonCode)
 
     member private this.RunJavaScriptCode(code: string) =
-        this.StatusBarText <- ResourceManager.GetString("Status_ExecutingJavaScript")
-        task {
-            try
-                let! result = CodeExecutionService.ExecuteJavaScriptCode(code)
-                do! Dispatcher.UIThread.InvokeAsync(fun () ->
-                    if result.Success then
-                        this.StatusBarText <- ResourceManager.GetString("Status_ExecutionSuccess")
-                        if not (String.IsNullOrWhiteSpace(result.Output)) then
-                            let truncatedOutput = 
-                                if result.Output.Length > 200 then 
-                                    result.Output.Substring(0, 200) + "..."
-                                else 
-                                    result.Output
-                            this.StatusBarText <- ResourceManager.FormatString("Status_ExecutionResult", [| truncatedOutput :> obj |])
-                    else
-                        let truncatedError = 
-                            if result.Error.Length > 200 then 
-                                result.Error.Substring(0, 200) + "..."
-                            else 
-                                result.Error
-                        this.StatusBarText <- ResourceManager.FormatString("Status_ExecutionError", [| truncatedError :> obj |])
-                )
-            with ex ->
-                do! Dispatcher.UIThread.InvokeAsync(fun () ->
-                    this.StatusBarText <- ResourceManager.FormatString("Status_ExecutionFailed", [| ex.Message :> obj |])
-                )
-        }
-        |> ignore
+        this.ExecuteCode(code, "Status_ExecutingJavaScript", CodeExecutionService.ExecuteJavaScriptCode)
 
     member private this.Undo() =
         match editorService with

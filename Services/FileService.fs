@@ -16,14 +16,14 @@ type FileService() =
         member this.ReadFile(path) =
             task {
                 if not (Path.IsPathRooted(path)) then
-                    failwith "相対パスはサポートされていません"
+                    failwith (ResourceManager.GetString("Error_RelativePathNotSupported"))
                 
                 if not (File.Exists(path)) then
-                    failwithf "ファイルが見つかりません: %s" path
+                    failwith (ResourceManager.FormatString("Error_FileNotFoundPath", [| path :> obj |]))
                 
                 let fileInfo = new FileInfo(path)
                 if fileInfo.Length > 10L * 1024L * 1024L then
-                    failwith "ファイルサイズが大きすぎます (10MB制限)"
+                    failwith (ResourceManager.GetString("Error_FileTooLargeLimit"))
                 
                 use fileStream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize = 4096, useAsync = true)
                 use streamReader = new StreamReader(fileStream)
@@ -33,7 +33,7 @@ type FileService() =
         member this.WriteFile(path) (content) =
             task {
                 if String.IsNullOrEmpty(content) then
-                    failwith "保存する内容がありません"
+                    failwith (ResourceManager.GetString("Status_NoContentToSave"))
                 
                 let directory = Path.GetDirectoryName(path: string)
                 if not (Directory.Exists(directory)) then
