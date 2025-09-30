@@ -34,9 +34,9 @@
             </MenuItem>
             <MenuItem Header="表示(_V)">
                 <MenuItem Header="言語切替(_L)">
-                    <MenuItem Header="日本語" Command="{Binding SetLanguageCommand}" CommandParameter="ja" />
-                    <MenuItem Header="English" Command="{Binding SetLanguageCommand}" CommandParameter="en" />
-                    <MenuItem Header="中文" Command="{Binding SetLanguageCommand}" CommandParameter="zh" />
+                    <MenuItem Header="{Binding Source={x:Static rm:ResourceManager.GetString}, Converter={StaticResource StringConverter}, ConverterParameter='Menu_Language_Japanese'}" Command="{Binding SetLanguageCommand}" CommandParameter="ja" />
+                    <MenuItem Header="{Binding Source={x:Static rm:ResourceManager.GetString}, Converter={StaticResource StringConverter}, ConverterParameter='Menu_Language_English'}" Command="{Binding SetLanguageCommand}" CommandParameter="en" />
+                    <MenuItem Header="{Binding Source={x:Static rm:ResourceManager.GetString}, Converter={StaticResource StringConverter}, ConverterParameter='Menu_Language_Chinese'}" Command="{Binding SetLanguageCommand}" CommandParameter="zh" />
                 </MenuItem>
             </MenuItem>
             <MenuItem Header="実行(_R)">
@@ -76,7 +76,8 @@
                 <Separator Margin="5" />
                 <ComboBox Name="LanguageSelector" Width="120" Margin="2"
                           ItemsSource="{Binding AvailableLanguages}"
-                          SelectedItem="{Binding CurrentLanguage}" />
+                          SelectedItem="{Binding CurrentLanguage, Mode=TwoWay}"
+                          SelectedIndex="{Binding SelectedLanguageIndex, Mode=TwoWay}" />
             </StackPanel>
 
             <!-- テキストエディタ -->

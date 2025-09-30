@@ -234,4 +234,170 @@
   <data name="App_Title" xml:space="preserve">
     <value>ZapEditor - 多语言文本编辑器</value>
   </data>
+  <data name="App_Exiting" xml:space="preserve">
+    <value>正在退出应用程序...</value>
+  </data>
+
+  <!-- Sidebar -->
+  <data name="Sidebar_FileTree" xml:space="preserve">
+    <value>文件树</value>
+  </data>
+  <data name="Sidebar_Project" xml:space="preserve">
+    <value>项目</value>
+  </data>
+  <data name="Sidebar_SourceCode" xml:space="preserve">
+    <value>源代码</value>
+  </data>
+  <data name="Sidebar_Resources" xml:space="preserve">
+    <value>资源</value>
+  </data>
+  <data name="Sidebar_Documents" xml:space="preserve">
+    <value>文档</value>
+  </data>
+
+  <!-- Debug Status Messages -->
+  <data name="Status_DebugInDevelopment" xml:space="preserve">
+    <value>调试功能正在开发中</value>
+  </data>
+  <data name="Status_DebuggingCSharp" xml:space="preserve">
+    <value>正在调试 C# 代码...</value>
+  </data>
+  <data name="Status_DebuggingFSharp" xml:space="preserve">
+    <value>正在调试 F# 代码...</value>
+  </data>
+  <data name="Status_DebuggingJavaScript" xml:space="preserve">
+    <value>正在调试 JavaScript 代码...</value>
+  </data>
+  <data name="Status_DebuggingPython" xml:space="preserve">
+    <value>正在调试 Python 代码...</value>
+  </data>
+  <data name="Status_DebugSuccess" xml:space="preserve">
+    <value>调试完成成功</value>
+  </data>
+  <data name="Status_DebugOutput" xml:space="preserve">
+    <value>调试输出: {0}</value>
+  </data>
+  <data name="Status_DebugError" xml:space="preserve">
+    <value>调试错误: {0}</value>
+  </data>
+  <data name="Status_DebugFailed" xml:space="preserve">
+    <value>调试失败: {0}</value>
+  </data>
+
+  <!-- Execution Status Messages -->
+  <data name="Status_ExecutingCSharp" xml:space="preserve">
+    <value>正在执行 C# 代码...</value>
+  </data>
+  <data name="Status_ExecutingFSharp" xml:space="preserve">
+    <value>正在执行 F# 代码...</value>
+  </data>
+  <data name="Status_ExecutingJavaScript" xml:space="preserve">
+    <value>正在执行 JavaScript 代码...</value>
+  </data>
+  <data name="Status_ExecutingPython" xml:space="preserve">
+    <value>正在执行 Python 代码...</value>
+  </data>
+  <data name="Status_ExecutionSuccess" xml:space="preserve">
+    <value>代码执行成功</value>
+  </data>
+  <data name="Status_ExecutionResult" xml:space="preserve">
+    <value>执行结果: {0}</value>
+  </data>
+  <data name="Status_ExecutionError" xml:space="preserve">
+    <value>执行错误: {0}</value>
+  </data>
+  <data name="Status_ExecutionFailed" xml:space="preserve">
+    <value>执行失败: {0}</value>
+  </data>
+
+  <!-- Edit Operations -->
+  <data name="Edit_Copy" xml:space="preserve">
+    <value>复制</value>
+  </data>
+  <data name="Edit_Cut" xml:space="preserve">
+    <value>剪切</value>
+  </data>
+  <data name="Edit_Paste" xml:space="preserve">
+    <value>粘贴</value>
+  </data>
+  <data name="Edit_Delete" xml:space="preserve">
+    <value>删除</value>
+  </data>
+  <data name="Edit_Undo" xml:space="preserve">
+    <value>撤销</value>
+  </data>
+  <data name="Edit_Redo" xml:space="preserve">
+    <value>重做</value>
+  </data>
+  <data name="Edit_SelectAll" xml:space="preserve">
+    <value>全选</value>
+  </data>
+
+  <!-- Error Status Messages -->
+  <data name="Status_FileNotFound" xml:space="preserve">
+    <value>文件未找到: {0}</value>
+  </data>
+  <data name="Status_FileAccessDenied" xml:space="preserve">
+    <value>文件访问被拒绝</value>
+  </data>
+  <data name="Status_FileInUse" xml:space="preserve">
+    <value>文件正在被其他进程使用</value>
+  </data>
+  <data name="Status_FileTooLarge" xml:space="preserve">
+    <value>文件过大 (10MB限制)</value>
+  </data>
+  <data name="Status_DirectoryNotFound" xml:space="preserve">
+    <value>目录未找到</value>
+  </data>
+  <data name="Status_PathTooLong" xml:space="preserve">
+    <value>路径过长</value>
+  </data>
+  <data name="Status_SecurityError" xml:space="preserve">
+    <value>发生安全错误</value>
+  </data>
+  <data name="Status_NoContentToSave" xml:space="preserve">
+    <value>没有内容可保存</value>
+  </data>
+  <data name="Status_NoEditor" xml:space="preserve">
+    <value>没有可用的编辑器</value>
+  </data>
+  <data name="Status_NothingToCopy" xml:space="preserve">
+    <value>没有内容可复制</value>
+  </data>
+  <data name="Status_NothingToCut" xml:space="preserve">
+    <value>没有内容可剪切</value>
+  </data>
+  <data name="Status_NothingToPaste" xml:space="preserve">
+    <value>没有内容可粘贴</value>
+  </data>
+  <data name="Status_NothingToDelete" xml:space="preserve">
+    <value>没有内容可删除</value>
+  </data>
+  <data name="Status_NothingToUndo" xml:space="preserve">
+    <value>没有可撤销的操作</value>
+  </data>
+  <data name="Status_NothingToRedo" xml:space="preserve">
+    <value>没有可重做的操作</value>
+  </data>
+  <data name="Status_NothingToSelect" xml:space="preserve">
+    <value>没有内容可选择</value>
+  </data>
+  <data name="Status_ClipboardEmpty" xml:space="preserve">
+    <value>剪贴板为空</value>
+  </data>
+  <data name="Status_PasteError" xml:space="preserve">
+    <value>粘贴错误: {0}</value>
+  </data>
+  <data name="Status_CodeTooLarge" xml:space="preserve">
+    <value>代码过大无法执行</value>
+  </data>
+  <data name="Menu_Language_Japanese" xml:space="preserve">
+    <value>日语</value>
+  </data>
+  <data name="Menu_Language_English" xml:space="preserve">
+    <value>英语</value>
+  </data>
+  <data name="Menu_Language_Chinese" xml:space="preserve">
+    <value>中文</value>
+  </data>
 </root>

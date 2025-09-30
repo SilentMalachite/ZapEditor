@@ -13,9 +13,9 @@ open System.Threading.Tasks
 type MainWindow () as this =
     inherit Window ()
 
-    let viewModel = MainWindowViewModel()
+    let viewModel = ServiceLocator.GetService<MainWindowViewModel>()
 
-    do 
+    do
         this.InitializeComponent()
         this.DataContext <- viewModel
 
@@ -33,11 +33,11 @@ type MainWindow () as this =
             (fun () -> this.ShowSaveFileDialogAsync())
         )
 
-        // シンタックスハイライトエディタを取得
+        // Get syntax highlight editor
         this.FindControl<SyntaxHighlightEditor>("Editor")
         |> Option.ofObj
         |> Option.iter (fun editorControl ->
-            // ViewModelとエディタの連携
+            // Connect ViewModel with editor
             viewModel.SetEditor(editorControl)
         )
 

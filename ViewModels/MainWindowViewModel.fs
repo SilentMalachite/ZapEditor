@@ -13,6 +13,7 @@ open Avalonia.Platform.Storage
 open Avalonia.Threading
 open ZapEditor.Controls
 open ZapEditor.Services
+open System.Threading
 
 type RelayCommand(action: Action<obj>, canExecute: Func<obj, bool>) =
     let canExecuteChanged = Event<EventHandler, EventArgs>()
@@ -27,10 +28,28 @@ type RelayCommand(action: Action<obj>, canExecute: Func<obj, bool>) =
 
     new(action) = RelayCommand(action, null)
 
-type MainWindowViewModel(?fileService: IFileService, ?editorService: IEditorService) =
+type MainWindowViewModel(?fileService: IFileService, ?editorService: IEditorService, ?toolValidator: IExternalToolValidator, ?configService: IConfigurationService, ?loggerService: ILoggerService, ?cancellationToken: CancellationToken) =
     do ()
 
-    let fileService = defaultArg fileService (FileService() :> IFileService)
+    let fileService = defaultArg fileService (FileService(?configService = configService) :> IFileService)
+    let toolValidator = defaultArg toolValidator (ExternalToolValidator() :> IExternalToolValidator)
+    let configService = defaultArg configService (ConfigurationService.Load() :> IConfigurationService)
+    let loggerService = defaultArg loggerService (LoggingService.Create(configService) :> ILoggerService)
+    let config = configService.GetConfig()
+    let cts = new CancellationTokenSource()
+    let cancellationToken = defaultArg cancellationToken cts.Token
+
+    // Replace magic numbers with configuration values
+    let maxOutputLength = config.Application.MaxOutputLength
+
+    // ログを初期化
+    do LogHelper.Initialize(loggerService)
+
+    // 起動時にツール依存性を検証
+    do this.ValidateToolDependencies()
+
+    // ログ記録
+    do LogHelper.LogInfo "MainWindowViewModel initialized"
     let mutable editorService = editorService
     let mutable currentFileContent = ""
     let mutable currentFileName = ResourceManager.GetString("App_Untitled")
@@ -97,6 +116,16 @@ type MainWindowViewModel(?fileService: IFileService, ?editorService: IEditorServ
 
     member this.AvailableLanguages = availableLanguages
 
+    member this.SelectedLanguageIndex
+        with get() =
+            let index = availableLanguages |> Array.findIndex (fun lang -> lang = currentLanguage)
+            if index >= 0 then index else 0
+        and set(value) =
+            if value >= 0 && value < availableLanguages.Length then
+                let selectedLang = availableLanguages.[value]
+                if selectedLang <> currentLanguage then
+                    this.OnLanguageChanged(selectedLang)
+
     member this.NewFileCommand = RelayCommand(fun _ -> this.NewFile())
     member this.OpenFileCommand = RelayCommand(fun _ -> this.OpenFile())
     member this.SaveFileCommand = RelayCommand(fun _ -> this.SaveFile())
@@ -125,37 +154,48 @@ type MainWindowViewModel(?fileService: IFileService, ?editorService: IEditorServ
         | None -> ()
 
     member private this.OpenFile() =
-        async {
-            let! result = this.ShowOpenFileDialog()
+        let startTime = DateTime.UtcNow
+        task {
+            let! result = openFileDialogFunc() |> Async.AwaitTask
             match result with
             | Some path ->
-                try
-                    let! content = fileService.ReadFile path |> Async.AwaitTask
-                    this.CurrentFileContent <- content
-                    this.CurrentFileName <- fileService.GetFileName(path)
-                    this.CurrentFilePath <- Some path
-                    this.DetectLanguage(path)
-                    match editorService with
-                    | Some service -> 
-                        service.Text <- content
-                        service.SetLanguage(this.CurrentLanguage)
-                    | None -> ()
-                    this.StatusBarText <- ResourceManager.FormatString("Status_FileOpened", [| this.CurrentFileName :> obj |])
-                with
-                | :? UnauthorizedAccessException ->
-                    this.StatusBarText <- ResourceManager.GetString("Status_FileAccessDenied")
-                | :? PathTooLongException ->
-                    this.StatusBarText <- ResourceManager.GetString("Status_PathTooLong")
-                | :? DirectoryNotFoundException ->
-                    this.StatusBarText <- ResourceManager.GetString("Status_DirectoryNotFound")
-                | :? SecurityException ->
-                    this.StatusBarText <- ResourceManager.GetString("Status_SecurityError")
-                | :? IOException as ex when ex.Message.Contains("使用中") ->
-                    this.StatusBarText <- ResourceManager.GetString("Status_FileInUse")
-                | ex ->
-                    this.StatusBarText <- ResourceManager.FormatString("Status_FileOpenError", [| ex.Message :> obj |])
+                LogHelper.LogDebug $"Opening file: {path}"
+                let! readResult = fileService.ReadFile path
+                match readResult with
+                | Ok content ->
+                    do! AsyncHelper.UiThreadInvokeAsync(fun () ->
+                        this.CurrentFileContent <- content
+                        this.CurrentFileName <- fileService.GetFileName(path)
+                        this.CurrentFilePath <- Some path
+                        this.DetectLanguage(path)
+
+                        match editorService with
+                        | Some service ->
+                            service.Text <- content
+                            service.SetLanguage(this.CurrentLanguage)
+                        | None -> ()
+
+                        this.StatusBarText <- ResourceManager.FormatString("Status_FileOpened", [| this.CurrentFileName :> obj |]))
+
+                    LogHelper.LogOperation "OpenFile" startTime true None
+                | Error error ->
+                    let errorMessage = this.GetFileErrorMessage(error)
+                    AsyncHelper.UpdateStatusSafely (fun msg -> this.StatusBarText <- msg) errorMessage
+                    LogHelper.LogOperation "OpenFile" startTime false (Some (Exception(errorMessage)))
             | None -> ()
-        } |> Async.Start
+        } |> Async.AwaitTask |> Async.Start
+
+    member private this.GetFileErrorMessage(error: FileOperationError) =
+        match error with
+        | FileNotFound path -> ResourceManager.FormatString("Status_FileNotFound", [| path :> obj |])
+        | FileAccessDenied _ -> ResourceManager.GetString("Status_FileAccessDenied")
+        | FileTooLarge _ -> ResourceManager.GetString("Status_FileTooLarge")
+        | EmptyContent -> ResourceManager.GetString("Status_NoContentToSave")
+        | PathTooLong _ -> ResourceManager.GetString("Status_PathTooLong")
+        | DirectoryNotFound _ -> ResourceManager.GetString("Status_DirectoryNotFound")
+        | SecurityError _ -> ResourceManager.GetString("Status_SecurityError")
+        | FileInUse _ -> ResourceManager.GetString("Status_FileInUse")
+        | UnknownError msg -> msg
 
     member private this.SaveFile() =
         match currentFilePath with
@@ -409,6 +449,7 @@ type MainWindowViewModel(?fileService: IFileService, ?editorService: IEditorServ
     member private this.OnLanguageChanged(language: string) =
         if language <> "自動検出" then
             this.CurrentLanguage <- language
+            this.NotifyPropertyChanged(nameof this.SelectedLanguageIndex) // ComboBoxの選択を更新
             match editorService with
             | Some service -> service.SetLanguage(language)
             | None -> ()
@@ -419,175 +460,121 @@ type MainWindowViewModel(?fileService: IFileService, ?editorService: IEditorServ
         match ext with
         | ".fs" | ".fsx" ->
             this.CurrentLanguage <- "F#"
+            this.NotifyPropertyChanged(nameof this.SelectedLanguageIndex) // ComboBox選択を更新
             match editorService with
             | Some service -> service.SetLanguage("F#")
             | None -> ()
         | ".cs" ->
             this.CurrentLanguage <- "C#"
+            this.NotifyPropertyChanged(nameof this.SelectedLanguageIndex) // ComboBox選択を更新
             match editorService with
             | Some service -> service.SetLanguage("C#")
             | None -> ()
         | ".py" ->
             this.CurrentLanguage <- "Python"
+            this.NotifyPropertyChanged(nameof this.SelectedLanguageIndex) // ComboBox選択を更新
             match editorService with
             | Some service -> service.SetLanguage("Python")
             | None -> ()
         | ".js" ->
             this.CurrentLanguage <- "JavaScript"
+            this.NotifyPropertyChanged(nameof this.SelectedLanguageIndex) // ComboBox選択を更新
             match editorService with
             | Some service -> service.SetLanguage("JavaScript")
             | None -> ()
         | ".ts" ->
             this.CurrentLanguage <- "TypeScript"
+            this.NotifyPropertyChanged(nameof this.SelectedLanguageIndex) // ComboBox選択を更新
             match editorService with
             | Some service -> service.SetLanguage("TypeScript")
             | None -> ()
         | ".html" | ".htm" ->
             this.CurrentLanguage <- "HTML"
+            this.NotifyPropertyChanged(nameof this.SelectedLanguageIndex) // ComboBox選択を更新
             match editorService with
             | Some service -> service.SetLanguage("HTML")
             | None -> ()
         | ".css" ->
             this.CurrentLanguage <- "CSS"
+            this.NotifyPropertyChanged(nameof this.SelectedLanguageIndex) // ComboBox選択を更新
             match editorService with
             | Some service -> service.SetLanguage("CSS")
             | None -> ()
         | ".json" ->
             this.CurrentLanguage <- "JSON"
+            this.NotifyPropertyChanged(nameof this.SelectedLanguageIndex) // ComboBox選択を更新
             match editorService with
             | Some service -> service.SetLanguage("JSON")
             | None -> ()
         | ".xml" ->
             this.CurrentLanguage <- "XML"
+            this.NotifyPropertyChanged(nameof this.SelectedLanguageIndex) // ComboBox選択を更新
             match editorService with
             | Some service -> service.SetLanguage("XML")
             | None -> ()
         | _ ->
             this.CurrentLanguage <- "テキスト"
+            this.NotifyPropertyChanged(nameof this.SelectedLanguageIndex) // ComboBox選択を更新
             match editorService with
             | Some service -> service.SetLanguage("テキスト")
             | None -> ()
 
     member private this.RunFSharpCode(code: string) =
-        this.StatusBarText <- ResourceManager.GetString("Status_ExecutingFSharp")
+        AsyncHelper.UpdateStatusSafely (fun msg -> this.StatusBarText <- msg) (ResourceManager.GetString("Status_ExecutingFSharp"))
+
         task {
             try
                 let! result = CodeExecutionService.ExecuteFSharpCode(code)
-                do! Dispatcher.UIThread.InvokeAsync(fun () ->
+                do! AsyncHelper.UiThreadInvokeAsync(fun () ->
                     if result.Success then
                         this.StatusBarText <- ResourceManager.GetString("Status_ExecutionSuccess")
                         if not (String.IsNullOrWhiteSpace(result.Output)) then
-                            let truncatedOutput = 
-                                if result.Output.Length > 200 then 
-                                    result.Output.Substring(0, 200) + "..."
-                                else 
-                                    result.Output
-                            this.StatusBarText <- ResourceManager.FormatString("Status_ExecutionResult", [| truncatedOutput :> obj |])
+                            let output = this.TruncateOutput(result.Output)
+                            this.StatusBarText <- ResourceManager.FormatString("Status_ExecutionResult", [| output :> obj |])
                     else
-                        let truncatedError = 
-                            if result.Error.Length > 200 then 
-                                result.Error.Substring(0, 200) + "..."
-                            else 
-                                result.Error
-                        this.StatusBarText <- ResourceManager.FormatString("Status_ExecutionError", [| truncatedError :> obj |])
-                )
+                        let error = this.TruncateOutput(result.Error)
+                        this.StatusBarText <- ResourceManager.FormatString("Status_ExecutionError", [| error :> obj |]))
             with ex ->
-                do! Dispatcher.UIThread.InvokeAsync(fun () ->
-                    this.StatusBarText <- ResourceManager.FormatString("Status_ExecutionFailed", [| ex.Message :> obj |])
-                )
-        }
-        |> ignore
+                AsyncHelper.UpdateStatusSafely (fun msg -> this.StatusBarText <- msg)
+                    (ResourceManager.FormatString("Status_ExecutionFailed", [| ex.Message :> obj |]))
+        } |> Async.AwaitTask |> Async.Start
+
+    member private this.TruncateOutput(text: string) =
+        if text.Length > maxOutputLength then
+            text.Substring(0, maxOutputLength) + "..."
+        else
+            text
 
     member private this.RunCSharpCode(code: string) =
-        this.StatusBarText <- ResourceManager.GetString("Status_ExecutingCSharp")
-        task {
-            try
-                let! result = CodeExecutionService.ExecuteCSharpCode(code)
-                do! Dispatcher.UIThread.InvokeAsync(fun () ->
-                    if result.Success then
-                        this.StatusBarText <- ResourceManager.GetString("Status_ExecutionSuccess")
-                        if not (String.IsNullOrWhiteSpace(result.Output)) then
-                            let truncatedOutput = 
-                                if result.Output.Length > 200 then 
-                                    result.Output.Substring(0, 200) + "..."
-                                else 
-                                    result.Output
-                            this.StatusBarText <- ResourceManager.FormatString("Status_ExecutionResult", [| truncatedOutput :> obj |])
-                    else
-                        let truncatedError = 
-                            if result.Error.Length > 200 then 
-                                result.Error.Substring(0, 200) + "..."
-                            else 
-                                result.Error
-                        this.StatusBarText <- ResourceManager.FormatString("Status_ExecutionError", [| truncatedError :> obj |])
-                )
-            with ex ->
-                do! Dispatcher.UIThread.InvokeAsync(fun () ->
-                    this.StatusBarText <- ResourceManager.FormatString("Status_ExecutionFailed", [| ex.Message :> obj |])
-                )
-        }
-        |> ignore
+        this.ExecuteCodeWithStatus(code, "Status_ExecutingCSharp", CodeExecutionService.ExecuteCSharpCode)
 
     member private this.RunPythonCode(code: string) =
-        this.StatusBarText <- ResourceManager.GetString("Status_ExecutingPython")
-        task {
-            try
-                let! result = CodeExecutionService.ExecutePythonCode(code)
-                do! Dispatcher.UIThread.InvokeAsync(fun () ->
-                    if result.Success then
-                        this.StatusBarText <- ResourceManager.GetString("Status_ExecutionSuccess")
-                        if not (String.IsNullOrWhiteSpace(result.Output)) then
-                            let truncatedOutput = 
-                                if result.Output.Length > 200 then 
-                                    result.Output.Substring(0, 200) + "..."
-                                else 
-                                    result.Output
-                            this.StatusBarText <- ResourceManager.FormatString("Status_ExecutionResult", [| truncatedOutput :> obj |])
-                    else
-                        let truncatedError = 
-                            if result.Error.Length > 200 then 
-                                result.Error.Substring(0, 200) + "..."
-                            else 
-                                result.Error
-                        this.StatusBarText <- ResourceManager.FormatString("Status_ExecutionError", [| truncatedError :> obj |])
-                )
-            with ex ->
-                do! Dispatcher.UIThread.InvokeAsync(fun () ->
-                    this.StatusBarText <- ResourceManager.FormatString("Status_ExecutionFailed", [| ex.Message :> obj |])
-                )
-        }
-        |> ignore
+        this.ExecuteCodeWithStatus(code, "Status_ExecutingPython", CodeExecutionService.ExecutePythonCode)
 
     member private this.RunJavaScriptCode(code: string) =
-        this.StatusBarText <- ResourceManager.GetString("Status_ExecutingJavaScript")
+        this.ExecuteCodeWithStatus(code, "Status_ExecutingJavaScript", CodeExecutionService.ExecuteJavaScriptCode)
+
+    member private this.ExecuteCodeWithStatus(code: string, statusKey: string, executor: string -> Task<CodeExecutionResult>) =
+        AsyncHelper.UpdateStatusSafely (fun msg -> this.StatusBarText <- msg) (ResourceManager.GetString(statusKey))
+
         task {
             try
-                let! result = CodeExecutionService.ExecuteJavaScriptCode(code)
-                do! Dispatcher.UIThread.InvokeAsync(fun () ->
+                let! result = executor(code)
+                do! AsyncHelper.UiThreadInvokeAsync(fun () ->
                     if result.Success then
                         this.StatusBarText <- ResourceManager.GetString("Status_ExecutionSuccess")
                         if not (String.IsNullOrWhiteSpace(result.Output)) then
-                            let truncatedOutput = 
-                                if result.Output.Length > 200 then 
-                                    result.Output.Substring(0, 200) + "..."
-                                else 
-                                    result.Output
-                            this.StatusBarText <- ResourceManager.FormatString("Status_ExecutionResult", [| truncatedOutput :> obj |])
+                            let output = this.TruncateOutput(result.Output)
+                            this.StatusBarText <- ResourceManager.FormatString("Status_ExecutionResult", [| output :> obj |])
                     else
-                        let truncatedError = 
-                            if result.Error.Length > 200 then 
-                                result.Error.Substring(0, 200) + "..."
-                            else 
-                                result.Error
-                        this.StatusBarText <- ResourceManager.FormatString("Status_ExecutionError", [| truncatedError :> obj |])
-                )
+                        let error = this.TruncateOutput(result.Error)
+                        this.StatusBarText <- ResourceManager.FormatString("Status_ExecutionError", [| error :> obj |]))
             with ex ->
-                do! Dispatcher.UIThread.InvokeAsync(fun () ->
-                    this.StatusBarText <- ResourceManager.FormatString("Status_ExecutionFailed", [| ex.Message :> obj |])
-                )
-        }
-        |> ignore
+                AsyncHelper.UpdateStatusSafely (fun msg -> this.StatusBarText <- msg)
+                    (ResourceManager.FormatString("Status_ExecutionFailed", [| ex.Message :> obj |]))
+        } |> Async.AwaitTask |> Async.Start
 
+    
     member private this.Undo() =
         match editorService with
         | Some service ->
@@ -689,3 +676,33 @@ type MainWindowViewModel(?fileService: IFileService, ?editorService: IEditorServ
             let! result = saveFileDialogFunc() |> Async.AwaitTask
             return result
         }
+
+    member private this.ValidateToolDependencies() =
+        task {
+            try
+                let! results = toolValidator.ValidateAllTools(ExternalToolValidator.DefaultToolDependencies)
+
+                let availableTools = results |> List.filter (fun r -> r.IsAvailable)
+                let missingTools = results |> List.filter (fun r -> not r.IsAvailable)
+                let requiredMissing = missingTools |> List.filter (fun r -> r.Tool.Required)
+
+                do! AsyncHelper.UiThreadInvokeAsync(fun () ->
+                    if requiredMissing.IsEmpty then
+                        if missingTools.IsEmpty then
+                            this.StatusBarText <- ResourceManager.GetString("Status_Ready")
+                        else
+                            let missingNames = missingTools |> List.map (fun r -> r.Tool.Name) |> String.concat ", "
+                            this.StatusBarText <- $"Optional tools not available: {missingNames}"
+                    else
+                        let missingRequired = requiredTools |> List.map (fun r -> r.Tool.Name) |> String.concat ", "
+                        this.StatusBarText <- $"Required tools missing: {missingRequired}")
+
+                // 結果をデバッグ出力（オプション）
+                results |> List.iter (fun r ->
+                    let message = ToolValidationHelper.GetToolStatusMessage(r)
+                    printfn $"{message}")
+            with
+            | ex ->
+                AsyncHelper.UpdateStatusSafely (fun msg -> this.StatusBarText <- msg)
+                    $"Tool validation failed: {ex.Message}"
+        } |> Async.AwaitTask |> Async.Start

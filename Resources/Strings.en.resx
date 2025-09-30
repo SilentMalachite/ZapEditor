@@ -234,4 +234,170 @@
   <data name="App_Title" xml:space="preserve">
     <value>ZapEditor - Multilingual Text Editor</value>
   </data>
+  <data name="App_Exiting" xml:space="preserve">
+    <value>Exiting application...</value>
+  </data>
+
+  <!-- Sidebar -->
+  <data name="Sidebar_FileTree" xml:space="preserve">
+    <value>File Tree</value>
+  </data>
+  <data name="Sidebar_Project" xml:space="preserve">
+    <value>Project</value>
+  </data>
+  <data name="Sidebar_SourceCode" xml:space="preserve">
+    <value>Source Code</value>
+  </data>
+  <data name="Sidebar_Resources" xml:space="preserve">
+    <value>Resources</value>
+  </data>
+  <data name="Sidebar_Documents" xml:space="preserve">
+    <value>Documents</value>
+  </data>
+
+  <!-- Debug Status Messages -->
+  <data name="Status_DebugInDevelopment" xml:space="preserve">
+    <value>Debug feature is in development</value>
+  </data>
+  <data name="Status_DebuggingCSharp" xml:space="preserve">
+    <value>Debugging C# code...</value>
+  </data>
+  <data name="Status_DebuggingFSharp" xml:space="preserve">
+    <value>Debugging F# code...</value>
+  </data>
+  <data name="Status_DebuggingJavaScript" xml:space="preserve">
+    <value>Debugging JavaScript code...</value>
+  </data>
+  <data name="Status_DebuggingPython" xml:space="preserve">
+    <value>Debugging Python code...</value>
+  </data>
+  <data name="Status_DebugSuccess" xml:space="preserve">
+    <value>Debug completed successfully</value>
+  </data>
+  <data name="Status_DebugOutput" xml:space="preserve">
+    <value>Debug output: {0}</value>
+  </data>
+  <data name="Status_DebugError" xml:space="preserve">
+    <value>Debug error: {0}</value>
+  </data>
+  <data name="Status_DebugFailed" xml:space="preserve">
+    <value>Debug failed: {0}</value>
+  </data>
+
+  <!-- Execution Status Messages -->
+  <data name="Status_ExecutingCSharp" xml:space="preserve">
+    <value>Executing C# code...</value>
+  </data>
+  <data name="Status_ExecutingFSharp" xml:space="preserve">
+    <value>Executing F# code...</value>
+  </data>
+  <data name="Status_ExecutingJavaScript" xml:space="preserve">
+    <value>Executing JavaScript code...</value>
+  </data>
+  <data name="Status_ExecutingPython" xml:space="preserve">
+    <value>Executing Python code...</value>
+  </data>
+  <data name="Status_ExecutionSuccess" xml:space="preserve">
+    <value>Execution completed successfully</value>
+  </data>
+  <data name="Status_ExecutionResult" xml:space="preserve">
+    <value>Execution result: {0}</value>
+  </data>
+  <data name="Status_ExecutionError" xml:space="preserve">
+    <value>Execution error: {0}</value>
+  </data>
+  <data name="Status_ExecutionFailed" xml:space="preserve">
+    <value>Execution failed: {0}</value>
+  </data>
+
+  <!-- Edit Operations -->
+  <data name="Edit_Copy" xml:space="preserve">
+    <value>Copy</value>
+  </data>
+  <data name="Edit_Cut" xml:space="preserve">
+    <value>Cut</value>
+  </data>
+  <data name="Edit_Paste" xml:space="preserve">
+    <value>Paste</value>
+  </data>
+  <data name="Edit_Delete" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="Edit_Undo" xml:space="preserve">
+    <value>Undo</value>
+  </data>
+  <data name="Edit_Redo" xml:space="preserve">
+    <value>Redo</value>
+  </data>
+  <data name="Edit_SelectAll" xml:space="preserve">
+    <value>Select All</value>
+  </data>
+
+  <!-- Error Status Messages -->
+  <data name="Status_FileNotFound" xml:space="preserve">
+    <value>File not found: {0}</value>
+  </data>
+  <data name="Status_FileAccessDenied" xml:space="preserve">
+    <value>Access denied to file</value>
+  </data>
+  <data name="Status_FileInUse" xml:space="preserve">
+    <value>File is in use by another process</value>
+  </data>
+  <data name="Status_FileTooLarge" xml:space="preserve">
+    <value>File is too large (10MB limit)</value>
+  </data>
+  <data name="Status_DirectoryNotFound" xml:space="preserve">
+    <value>Directory not found</value>
+  </data>
+  <data name="Status_PathTooLong" xml:space="preserve">
+    <value>Path is too long</value>
+  </data>
+  <data name="Status_SecurityError" xml:space="preserve">
+    <value>Security error occurred</value>
+  </data>
+  <data name="Status_NoContentToSave" xml:space="preserve">
+    <value>No content to save</value>
+  </data>
+  <data name="Status_NoEditor" xml:space="preserve">
+    <value>No editor available</value>
+  </data>
+  <data name="Status_NothingToCopy" xml:space="preserve">
+    <value>Nothing to copy</value>
+  </data>
+  <data name="Status_NothingToCut" xml:space="preserve">
+    <value>Nothing to cut</value>
+  </data>
+  <data name="Status_NothingToPaste" xml:space="preserve">
+    <value>Nothing to paste</value>
+  </data>
+  <data name="Status_NothingToDelete" xml:space="preserve">
+    <value>Nothing to delete</value>
+  </data>
+  <data name="Status_NothingToUndo" xml:space="preserve">
+    <value>Nothing to undo</value>
+  </data>
+  <data name="Status_NothingToRedo" xml:space="preserve">
+    <value>Nothing to redo</value>
+  </data>
+  <data name="Status_NothingToSelect" xml:space="preserve">
+    <value>Nothing to select</value>
+  </data>
+  <data name="Status_ClipboardEmpty" xml:space="preserve">
+    <value>Clipboard is empty</value>
+  </data>
+  <data name="Status_PasteError" xml:space="preserve">
+    <value>Paste error: {0}</value>
+  </data>
+  <data name="Status_CodeTooLarge" xml:space="preserve">
+    <value>Code is too large for execution</value>
+  </data>
+  <data name="Menu_Language_Japanese" xml:space="preserve">
+    <value>Japanese</value>
+  </data>
+  <data name="Menu_Language_English" xml:space="preserve">
+    <value>English</value>
+  </data>
+  <data name="Menu_Language_Chinese" xml:space="preserve">
+    <value>Chinese</value>
+  </data>
 </root>

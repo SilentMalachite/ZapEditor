@@ -10,6 +10,12 @@
   </PropertyGroup>
 
 <ItemGroup>
+    <Compile Include="Services/Types.fs" />
+    <Compile Include="Services/AsyncHelper.fs" />
+    <Compile Include="Services/ExternalToolValidator.fs" />
+    <Compile Include="Services/Configuration.fs" />
+    <Compile Include="Services/LoggingService.fs" />
+    <Compile Include="Services/DependencyInjection.fs" />
     <Compile Include="Services/IEditorService.fs" />
     <Compile Include="Services/IFileService.fs" />
     <Compile Include="Services/ResourceManager.fs" />
@@ -36,5 +42,14 @@
       <IncludeAssets Condition="'$(Configuration)' != 'Debug'">None</IncludeAssets>
       <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
     </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="8.0.0" />
+    <PackageReference Include="Serilog" Version="4.0.0" />
+    <PackageReference Include="Serilog.Sinks.File" Version="6.0.0" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
+    <PackageReference Include="Serilog.Extensions.Logging" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.0" />
   </ItemGroup>
 </Project>

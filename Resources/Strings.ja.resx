@@ -372,4 +372,147 @@
   <data name="App_Title" xml:space="preserve">
     <value>ZapEditor - 多言語対応テキストエディタ</value>
   </data>
+  <data name="App_Exiting" xml:space="preserve">
+    <value>アプリケーションを終了しています...</value>
+  </data>
+
+  <!-- Sidebar -->
+  <data name="Sidebar_FileTree" xml:space="preserve">
+    <value>ファイルツリー</value>
+  </data>
+  <data name="Sidebar_Project" xml:space="preserve">
+    <value>プロジェクト</value>
+  </data>
+  <data name="Sidebar_SourceCode" xml:space="preserve">
+    <value>ソースコード</value>
+  </data>
+  <data name="Sidebar_Resources" xml:space="preserve">
+    <value>リソース</value>
+  </data>
+  <data name="Sidebar_Documents" xml:space="preserve">
+    <value>ドキュメント</value>
+  </data>
+
+  <!-- Debug Status Messages -->
+  <data name="Status_DebugInDevelopment" xml:space="preserve">
+    <value>デバッグ機能は開発中です</value>
+  </data>
+  <data name="Status_DebuggingCSharp" xml:space="preserve">
+    <value>C#コードをデバッグ中...</value>
+  </data>
+  <data name="Status_DebuggingFSharp" xml:space="preserve">
+    <value>F#コードをデバッグ中...</value>
+  </data>
+  <data name="Status_DebuggingJavaScript" xml:space="preserve">
+    <value>JavaScriptコードをデバッグ中...</value>
+  </data>
+  <data name="Status_DebuggingPython" xml:space="preserve">
+    <value>Pythonコードをデバッグ中...</value>
+  </data>
+  <data name="Status_DebugSuccess" xml:space="preserve">
+    <value>デバッグが正常に完了しました</value>
+  </data>
+  <data name="Status_DebugOutput" xml:space="preserve">
+    <value>デバッグ出力: {0}</value>
+  </data>
+  <data name="Status_DebugError" xml:space="preserve">
+    <value>デバッグエラー: {0}</value>
+  </data>
+  <data name="Status_DebugFailed" xml:space="preserve">
+    <value>デバッグ失敗: {0}</value>
+  </data>
+
+  <!-- Execution Status Messages -->
+  <data name="Status_ExecutingCSharp" xml:space="preserve">
+    <value>C#コードを実行中...</value>
+  </data>
+  <data name="Status_ExecutingFSharp" xml:space="preserve">
+    <value>F#コードを実行中...</value>
+  </data>
+  <data name="Status_ExecutingJavaScript" xml:space="preserve">
+    <value>JavaScriptコードを実行中...</value>
+  </data>
+  <data name="Status_ExecutingPython" xml:space="preserve">
+    <value>Pythonコードを実行中...</value>
+  </data>
+  <data name="Status_ExecutionSuccess" xml:space="preserve">
+    <value>コードが正常に実行されました</value>
+  </data>
+  <data name="Status_ExecutionResult" xml:space="preserve">
+    <value>実行結果: {0}</value>
+  </data>
+  <data name="Status_ExecutionError" xml:space="preserve">
+    <value>実行エラー: {0}</value>
+  </data>
+  <data name="Status_ExecutionFailed" xml:space="preserve">
+    <value>実行失敗: {0}</value>
+  </data>
+
+  <!-- Error Status Messages -->
+  <data name="Status_FileNotFound" xml:space="preserve">
+    <value>ファイルが見つかりません: {0}</value>
+  </data>
+  <data name="Status_FileAccessDenied" xml:space="preserve">
+    <value>ファイルへのアクセスが拒否されました</value>
+  </data>
+  <data name="Status_FileInUse" xml:space="preserve">
+    <value>ファイルが他のプロセスで使用中です</value>
+  </data>
+  <data name="Status_FileTooLarge" xml:space="preserve">
+    <value>ファイルが大きすぎます (10MB制限)</value>
+  </data>
+  <data name="Status_DirectoryNotFound" xml:space="preserve">
+    <value>ディレクトリが見つかりません</value>
+  </data>
+  <data name="Status_PathTooLong" xml:space="preserve">
+    <value>パスが長すぎます</value>
+  </data>
+  <data name="Status_SecurityError" xml:space="preserve">
+    <value>セキュリティエラーが発生しました</value>
+  </data>
+  <data name="Status_NoContentToSave" xml:space="preserve">
+    <value>保存する内容がありません</value>
+  </data>
+  <data name="Status_NoEditor" xml:space="preserve">
+    <value>使用可能なエディタがありません</value>
+  </data>
+  <data name="Status_NothingToCopy" xml:space="preserve">
+    <value>コピーする内容がありません</value>
+  </data>
+  <data name="Status_NothingToCut" xml:space="preserve">
+    <value>切り取る内容がありません</value>
+  </data>
+  <data name="Status_NothingToPaste" xml:space="preserve">
+    <value>貼り付ける内容がありません</value>
+  </data>
+  <data name="Status_NothingToDelete" xml:space="preserve">
+    <value>削除する内容がありません</value>
+  </data>
+  <data name="Status_NothingToUndo" xml:space="preserve">
+    <value>元に戻す操作がありません</value>
+  </data>
+  <data name="Status_NothingToRedo" xml:space="preserve">
+    <value>やり直す操作がありません</value>
+  </data>
+  <data name="Status_NothingToSelect" xml:space="preserve">
+    <value>選択する内容がありません</value>
+  </data>
+  <data name="Status_ClipboardEmpty" xml:space="preserve">
+    <value>クリップボードが空です</value>
+  </data>
+  <data name="Status_PasteError" xml:space="preserve">
+    <value>貼り付けエラー: {0}</value>
+  </data>
+  <data name="Status_CodeTooLarge" xml:space="preserve">
+    <value>コードが大きすぎて実行できません</value>
+  </data>
+  <data name="Menu_Language_Japanese" xml:space="preserve">
+    <value>日本語</value>
+  </data>
+  <data name="Menu_Language_English" xml:space="preserve">
+    <value>English</value>
+  </data>
+  <data name="Menu_Language_Chinese" xml:space="preserve">
+    <value>中文</value>
+  </data>
 </root>
