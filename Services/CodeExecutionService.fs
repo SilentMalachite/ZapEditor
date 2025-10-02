@@ -13,8 +13,30 @@ type CodeExecutionResult =
       ExitCode: int }
 
 type CodeExecutionService() =
+    // 定数定義
+    static let DefaultTimeoutMilliseconds = 30000
+    static let AllowedExecutables = [
+        "python"
+        "python3"
+        "node"
+        "dotnet"
+    ]
 
-    static member private ValidateExecutablePath(executable: string) =
+    // ヘルパーメソッド
+    static member private KillProcessSafely(proc: Process) =
+        try 
+            proc.Kill(true)
+        with 
+        | ex -> 
+            eprintfn "プロセスの終了に失敗しました: %s" ex.Message
+
+    static member private IsAllowedExecutable(path: string) =
+        let fileName = Path.GetFileName(path).ToLowerInvariant()
+        AllowedExecutables
+        |> List.exists (fun allowed -> 
+            fileName.StartsWith(allowed, StringComparison.OrdinalIgnoreCase))
+
+    static member private ValidateExecutablePath
         try
             let path = 
                 if Path.IsPathRooted(executable) then
@@ -32,7 +54,7 @@ type CodeExecutionService() =
                             | None -> executable
             
             if not (File.Exists(path)) then
-                failwith (ResourceManager.FormatString("Error_ExecutableNotFound", [| executable :> obj |]))
+                failwith $"実行ファイルが見つかりません: {executable}"
             
             let fullPath = Path.GetFullPath(path)
             let safePaths = [
@@ -42,16 +64,18 @@ type CodeExecutionService() =
                 "/usr/bin"
                 "/usr/local/bin"
                 "/opt/homebrew/bin"
+                "/Library/Frameworks/Python.framework/Versions"
+                "/opt/homebrew"
             ]
             let isSafe = safePaths |> List.exists (fun safePath -> 
                 not (String.IsNullOrEmpty(safePath)) && fullPath.StartsWith(safePath))
-            if not isSafe then
-                failwith (ResourceManager.FormatString("Error_UnsafePath", [| fullPath :> obj |]))
+            if not isSafe && not (CodeExecutionService.IsAllowedExecutable(fullPath)) then
+                failwith $"安全でないパスです: {fullPath}"
             
             path
         with
-        | :? SecurityException -> failwith (ResourceManager.FormatString("Error_AccessDenied", [| executable :> obj |]))
-        | ex -> failwith (ResourceManager.FormatString("Error_ValidationFailed", [| ex.Message :> obj |]))
+        | :? SecurityException -> failwith $"アクセスが拒否されました: {executable}"
+        | ex -> failwith $"検証に失敗しました: {ex.Message}"
 
     static member private CreateSecureTempFile(extension: string, content: string) =
         let tempDir = Path.GetTempPath()
@@ -69,7 +93,7 @@ type CodeExecutionService() =
                 with 
                 | deleteEx -> 
                     // Log the delete failure but don't suppress the original exception
-                    eprintfn "%s" (ResourceManager.FormatString("Error_TempFileDeleteFailed", [| tempFile :> obj; deleteEx.Message :> obj |]))
+                    eprintfn "一時ファイルの削除に失敗しました: %s - %s" tempFile deleteEx.Message
             reraise()
     
     static member private DeleteTempFileSafely(tempFile: string) =
@@ -78,12 +102,12 @@ type CodeExecutionService() =
                 File.Delete(tempFile)
             with 
             | ex -> 
-                eprintfn "一時ファイルの削除に失敗: %s - %s" tempFile ex.Message
+                eprintfn "一時ファイルの削除に失敗しました: %s - %s" tempFile ex.Message
 
-    static member private ExecuteProcessSafely(executable: string, arguments: string, ?workingDirectory: string, ?timeoutMs: int) =
+    static member internal ExecuteProcessSafely(executable: string, arguments: string, ?workingDirectory: string, ?timeoutMs: int) =
         task {
             let validatedPath = CodeExecutionService.ValidateExecutablePath(executable)
-            let timeout = defaultArg timeoutMs 30000 // 30 seconds default
+            let timeout = defaultArg timeoutMs DefaultTimeoutMilliseconds
             
             let startInfo = ProcessStartInfo(
                 FileName = validatedPath,
@@ -103,7 +127,7 @@ type CodeExecutionService() =
             try
                 let started = proc.Start()
                 if not started then
-                    failwith (ResourceManager.GetString("Error_ProcessStartFailed"))
+                    failwith "プロセスの起動に失敗しました"
                 
                 // Read output asynchronously to prevent deadlocks
                 let outputTask = proc.StandardOutput.ReadToEndAsync()
@@ -122,23 +146,41 @@ type CodeExecutionService() =
                           ExitCode = proc.ExitCode }
                 else
                     // Timeout occurred
-                    try proc.Kill(true) with | _ -> ()
+                    CodeExecutionService.KillProcessSafely(proc)
                     return
                         { Success = false
                           Output = output
-                          Error = ResourceManager.GetString("Error_ExecutionTimeout")
+                          Error = "実行がタイムアウトしました"
                           ExitCode = -1 }
             with
             | :? TimeoutException ->
-                try proc.Kill(true) with | _ -> ()
+                CodeExecutionService.KillProcessSafely(proc)
                 return
                     { Success = false
                       Output = ""
                       Error = "実行がタイムアウトしました"
                       ExitCode = -1 }
+            | :? SecurityException ->
+                CodeExecutionService.KillProcessSafely(proc)
+                return
+                    { Success = false
+                      Output = ""
+                      Error = $"セキュリティ例外が発生しました: プロセスの実行権限がありません"
+                      ExitCode = -1 }
+            | :? InvalidOperationException as ex ->
+                CodeExecutionService.KillProcessSafely(proc)
+                return
+                    { Success = false
+                      Output = ""
+                      Error = $"プロセスの操作が無効です: {ex.Message}"
+                      ExitCode = -1 }
             | ex ->
-                try proc.Kill(true) with | _ -> ()
-                return! Task.FromException<CodeExecutionResult>(ex)
+                CodeExecutionService.KillProcessSafely(proc)
+                return
+                    { Success = false
+                      Output = ""
+                      Error = $"予期しないエラーが発生しました: {ex.Message}"
+                      ExitCode = -1 }
         }
 
     static member ExecutePythonCode(code: string, ?workingDirectory: string) : Task<CodeExecutionResult> =
