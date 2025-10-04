@@ -1,66 +1,162 @@
-# Contributing to ZapEditor
+# ZapEditorへの貢献
 
-Thanks for your interest in improving ZapEditor! This document outlines how to set up your environment, report issues, and submit patches.
+ZapEditorの改善にご興味をお持ちいただき、ありがとうございます！このドキュメントでは、環境のセットアップ、Issue の報告、パッチの提出方法について説明します。
 
-## 📋 Code of Conduct
+[English](./docs/CONTRIBUTING.en.md) | 日本語 | [中文](./docs/CONTRIBUTING.zh.md)
 
-Respectful and inclusive communication is essential. By participating in this project you agree to uphold the values described in the [Contributor Covenant](https://www.contributor-covenant.org/version/2/1/code_of_conduct/). If you experience or witness unacceptable behavior, please open a confidential issue.
+## 📋 行動規範
 
-## 🛠️ Development Environment
+敬意を持った包括的なコミュニケーションが不可欠です。このプロジェクトに参加することで、[Contributor Covenant](https://www.contributor-covenant.org/ja/version/2/1/code_of_conduct/)に記載された価値観を支持することに同意したものとみなされます。許容できない行動を経験または目撃した場合は、機密性の高いIssueを開いてください。
 
-1. Install the [.NET SDK 9.0](https://dotnet.microsoft.com/download/dotnet/9.0).
-2. (Optional) Install Python 3.x and Node.js 18+ if you plan to work on the code execution service.
-3. Restore packages:
+## 🛠️ 開発環境
+
+1. [.NET SDK 9.0](https://dotnet.microsoft.com/download/dotnet/9.0)をインストールします。
+2. （オプション）コード実行サービスの作業を予定している場合は、Python 3.xとNode.js 18+をインストールします。
+3. パッケージを復元します：
    ```bash
    dotnet restore --ignore-failed-sources
    ```
-4. Run the application locally:
+4. ローカルでアプリケーションを実行します：
    ```bash
    dotnet run
    ```
 
-### Recommended Tools
+### 推奨ツール
 
-- IDE: [JetBrains Rider](https://www.jetbrains.com/rider/) or [Visual Studio Code](https://code.visualstudio.com/) with the Ionide extension pack
-- Formatter: `dotnet fantomas` (if available) for keeping F# code consistent
-- Linting: `dotnet build` (compilation warnings are treated as lint feedback)
+- **IDE**: [JetBrains Rider](https://www.jetbrains.com/rider/)または[Visual Studio Code](https://code.visualstudio.com/)（Ionide拡張パックを含む）
+- **フォーマッター**: `dotnet fantomas`（利用可能な場合）でF#コードの一貫性を保つ
+- **リンティング**: `dotnet build`（コンパイル警告をリントフィードバックとして扱う）
 
-## 🔁 Workflow
+## 🔁 ワークフロー
 
-1. **Fork** the repository and create a feature branch (`feature/<short-description>`).
-2. Keep your branch focused—split large work into small, reviewable commits.
-3. Run `dotnet build` before pushing to ensure the project compiles.
-4. Update or add documentation and tests when altering behavior.
-5. Open a **Pull Request** targeting `main`.
-   - Provide a clear description of the change and screenshots/gifs when UI is affected.
-   - Reference related issues (e.g. `Closes #123`).
+1. リポジトリを**フォーク**し、フィーチャーブランチ（`feature/<簡単な説明>`）を作成します。
+2. ブランチは焦点を絞ったものにしてください。大きな作業は小さくてレビューしやすいコミットに分割します。
+3. プッシュする前に`dotnet build`を実行して、プロジェクトがコンパイルされることを確認します。
+4. 動作を変更する場合は、ドキュメントやテストを更新または追加します。
+5. `main`を対象とした**Pull Request**を開きます。
+   - 変更内容の明確な説明を提供し、UIに影響がある場合はスクリーンショットやGIFを含めます。
+   - 関連するIssueを参照します（例：`Closes #123`）。
 
-## 🧪 Testing
+## 🧪 テスト
 
-- Use `dotnet watch run` for rapid UI iteration.
-- For code execution changes, add smoke tests or scripts that exercise the new language support where possible.
-- Manual verification checklist for UI PRs:
-  - File open/save dialogs work on your platform
-  - Syntax highlighting loads for at least one language
-  - Status bar updates when switching UI language
+- UIの迅速な反復には`dotnet watch run`を使用します。
+- コード実行の変更については、可能な限り新しい言語サポートを実行するスモークテストやスクリプトを追加します。
+- UI関連PRの手動検証チェックリスト：
+  - お使いのプラットフォームでファイルの開く/保存ダイアログが機能すること
+  - 少なくとも1つの言語でシンタックスハイライトが読み込まれること
+  - UI言語を切り替えたときにステータスバーが更新されること
+  - 縦書き/横書き切替が正しく動作すること
 
-## 🐞 Reporting Bugs
+## 🐞 バグの報告
 
-When filing an issue, please include:
+Issueを作成する際は、以下の情報を含めてください：
 
-- Environment (OS, .NET SDK version)
-- Steps to reproduce
-- Expected vs. actual behavior
-- Logs or screenshots when applicable
+- **環境**（OS、.NET SDKバージョン）
+- **再現手順**
+- **期待される動作 vs. 実際の動作**
+- **ログまたはスクリーンショット**（該当する場合）
 
-## ✨ Feature Requests
+### バグ報告のテンプレート
 
-Describe the user problem you are solving, not just the solution. Include:
+```markdown
+## 環境
+- OS: [例: Windows 11, macOS 14.0]
+- .NET SDK: [例: 9.0.100]
+- ZapEditorバージョン: [例: v1.2.0]
 
-- Motivation / use case
-- Proposed UX (mockups welcome)
-- Suggested implementation details (optional)
+## 再現手順
+1. ...
+2. ...
+3. ...
 
-## 📄 Licensing
+## 期待される動作
 
-By contributing, you agree that your contributions will be licensed under the terms of the [Apache License 2.0](LICENSE).
+
+## 実際の動作
+
+
+## スクリーンショット（オプション）
+
+```
+
+## ✨ 機能リクエスト
+
+解決策だけでなく、解決しようとしているユーザーの問題を説明してください。以下を含めます：
+
+- **動機 / ユースケース**
+- **提案するUX**（モックアップ歓迎）
+- **提案する実装の詳細**（オプション）
+
+### 機能リクエストのテンプレート
+
+```markdown
+## 問題・背景
+
+
+## 提案する解決策
+
+
+## 代替案（検討した場合）
+
+
+## 追加のコンテキスト
+
+```
+
+## 💻 コーディング規約
+
+- **F#のスタイル**: 既存のコードのスタイルに従ってください
+- **インデント**: スペース4つを使用
+- **命名規則**:
+  - 関数とメソッド: キャメルケース（例：`loadFile`）
+  - 型とモジュール: パスカルケース（例：`EditorService`）
+  - プライベートメンバー: `this.`プレフィックスを使用
+- **コメント**: 複雑なロジックには簡潔な説明を追加
+- **リソース文字列**: 新しいUI要素には多言語対応のリソース文字列を追加
+
+## 📝 コミットメッセージ
+
+わかりやすいコミットメッセージを心がけてください：
+
+```
+短いサマリー（50文字以内）
+
+必要に応じて詳細な説明を追加します。変更の理由や
+背景情報を含めることで、レビュアーが理解しやすくなります。
+
+- 箇条書きも使えます
+- 複数の変更を含む場合は、各項目を列挙
+
+Closes #123
+```
+
+## 🔄 Pull Requestのプロセス
+
+1. **ブランチを最新の状態に保つ**: `main`ブランチからの変更を定期的にマージ
+2. **テストを実行**: すべてのテストが通ることを確認
+3. **ドキュメントを更新**: 必要に応じてREADME.mdやその他のドキュメントを更新
+4. **変更履歴を記録**: 大きな変更の場合は、knowledge.mdも更新
+5. **レビューに対応**: フィードバックを受け入れ、必要な修正を行う
+
+## 📚 ドキュメント貢献
+
+コード以外の貢献も大歓迎です：
+
+- **README改善**: わかりやすい説明や例を追加
+- **多言語化**: 新しい言語のリソースファイルを追加
+- **チュートリアル**: 使い方ガイドやベストプラクティスを作成
+- **APIドキュメント**: コードにXMLドキュメントコメントを追加
+
+## 📄 ライセンス
+
+貢献することで、あなたの貢献が[Apache License 2.0](LICENSE)の条件下でライセンスされることに同意したものとみなされます。
+
+## 🙏 謝辞
+
+ZapEditorへの貢献を検討していただき、ありがとうございます！あなたの時間と専門知識は、このプロジェクトをより良いものにするのに役立ちます。
+
+質問がある場合は、遠慮なく[Discussions](https://github.com/SilentMalachite/ZapEditor/discussions)で質問してください。
+
+---
+
+**Happy Coding! 🚀**

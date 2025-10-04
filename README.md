@@ -1,134 +1,207 @@
 # ZapEditor
 
-Cross-platform code editor built with F# and Avalonia UI. ZapEditor focuses on fast startup, TextMate-based syntax highlighting, and lightweight code execution helpers for popular scripting languages.
+F#とAvalonia UIで構築されたクロスプラットフォーム対応のコードエディタです。高速起動、TextMateベースのシンタックスハイライト、そして主要なスクリプト言語向けの軽量なコード実行機能を提供します。
 
-## Table of Contents
+[English](./docs/README.en.md) | 日本語 | [中文](./docs/README.zh.md)
 
-1. [Feature Highlights](#feature-highlights)
-2. [Screenshots](#screenshots)
-3. [Quick Start](#quick-start)
-4. [Configuration](#configuration)
-5. [Project Layout](#project-layout)
-6. [Localization](#localization)
-7. [Development Workflow](#development-workflow)
-8. [Contributing](#contributing)
-9. [License](#license)
+## 目次
 
-## Feature Highlights
+1. [主な機能](#主な機能)
+2. [スクリーンショット](#スクリーンショット)
+3. [クイックスタート](#クイックスタート)
+4. [設定方法](#設定方法)
+5. [プロジェクト構成](#プロジェクト構成)
+6. [多言語対応](#多言語対応)
+7. [開発ワークフロー](#開発ワークフロー)
+8. [貢献方法](#貢献方法)
+9. [ライセンス](#ライセンス)
 
-- 🎨 **TextMate syntax highlighting** powered by `Avalonia.AvaloniaEdit` 11.0.5 + TextMate grammars
-- 🌐 **Instant language switching** (Japanese / English / Chinese) with localized resource strings
-- 🗂️ **File operations** backed by Avalonia storage provider (open, save, save-as)
-- ▶️ **Inline code execution** for F#, C#, Python, and JavaScript via pluggable `CodeExecutionService`
-- 💻 **Desktop-first UX** using Avalonia 11.3.6 targeting Windows, macOS, and Linux
+## 主な機能
 
-## Screenshots
+- 🎨 **TextMateシンタックスハイライト** - `Avalonia.AvaloniaEdit` 11.0.5 + TextMate文法による美しいコードハイライト
+- 📝 **縦書き/横書き切替** - メニューまたはツールバーから瞬時に表示モードを切替可能
+- 🌐 **多言語UI対応** - 日本語/英語/中国語のリアルタイム切替に対応
+- 🗂️ **ファイル操作** - Avalonia storage providerを使用した安全なファイルの開く・保存機能
+- ▶️ **コード実行機能** - F#、C#、Python、JavaScriptのインライン実行をサポート
+- 💻 **デスクトップ最適化** - Avalonia 11.3.6によるWindows、macOS、Linux対応
 
-_Coming soon — contributions welcome!_
+## スクリーンショット
 
-## Quick Start
+_準備中 — コントリビューション歓迎！_
 
-### Prerequisites
+## クイックスタート
+
+### 必要な環境
 
 - [.NET SDK 9.0](https://dotnet.microsoft.com/download/dotnet/9.0)
-- Optional runtime dependencies for code execution features:
-  - Python 3.x (`python3` on PATH)
-  - Node.js 18+ (`node` on PATH)
+- コード実行機能を使用する場合（オプション）：
+  - Python 3.x（`python3`がPATHに含まれていること）
+  - Node.js 18+（`node`がPATHに含まれていること）
 
-### Clone & Run
+### クローン＆実行
 
 ```bash
 git clone https://github.com/SilentMalachite/ZapEditor.git
 cd ZapEditor
 
-# Restore packages (offline-friendly)
+# パッケージの復元（オフライン環境でも動作）
 dotnet restore --ignore-failed-sources
 
-# Build and start the app
+# ビルドしてアプリケーションを起動
 dotnet run
 ```
 
-> ℹ️ 脆弱性データの取得がネットワーク制限で失敗する場合は `--ignore-failed-sources` を付けてください。ビルド自体には影響しません。
+> ℹ️ ネットワーク制限により脆弱性データの取得に失敗する場合は `--ignore-failed-sources` オプションを使用してください。ビルド自体には影響しません。
 
-### Packaging
+### バイナリのダウンロード
+
+最新のリリース版は[Releases](https://github.com/SilentMalachite/ZapEditor/releases)ページからダウンロードできます。
+
+- **Windows**: `ZapEditor-v1.2.0-windows-x64.zip`
+- **macOS (Apple Silicon)**: `ZapEditor-v1.2.0-macos-arm64.zip`
+- **macOS (Intel)**: `ZapEditor-v1.2.0-macos-x64.zip`
+
+ZIPファイルを解凍して実行するだけです。.NETランタイムのインストールは不要です（自己完結型バイナリ）。
+
+### パッケージング
 
 ```bash
-# Produce a framework-dependent build
-dotnet publish -c Release -r win-x64 --self-contained false
+# 自己完結型ビルドの作成（Windows 64bit版）
+dotnet publish -c Release -r win-x64 --self-contained -p:PublishSingleFile=true
+
+# macOS ARM64版
+dotnet publish -c Release -r osx-arm64 --self-contained -p:PublishSingleFile=true
+
+# macOS Intel版
+dotnet publish -c Release -r osx-x64 --self-contained -p:PublishSingleFile=true
 ```
 
-Adjust the runtime identifier (`-r`) for `osx-x64`, `linux-x64`, etc.
+ランタイム識別子（`-r`）を変更することで、他のプラットフォーム（`linux-x64`など）向けにもビルドできます。
 
-## Configuration
+## 設定方法
 
-| Area | How to customize |
+| 項目 | カスタマイズ方法 |
 | ---- | ---------------- |
-| Default culture | Update `Resources/Strings.*.resx` or call `ResourceManager.SetLanguage` on startup |
-| Syntax themes | Replace `ThemeName.DarkPlus` in `Controls/SyntaxHighlightEditor.axaml.fs` with another `ThemeName` |
-| Supported grammars | Extend `SetLanguage` mapping in `SyntaxHighlightEditor` and `DetectLanguage` in `MainWindowViewModel` |
-| Execution backends | Implement additional helpers in `Services/CodeExecutionService.fs` |
+| デフォルト言語 | `Resources/Strings.*.resx`を更新するか、起動時に`ResourceManager.SetLanguage`を呼び出す |
+| シンタックステーマ | `Controls/SyntaxHighlightEditor.axaml.fs`の`ThemeName.DarkPlus`を他の`ThemeName`に変更 |
+| サポート文法 | `SyntaxHighlightEditor`の`SetLanguage`マッピングと`MainWindowViewModel`の`DetectLanguage`を拡張 |
+| コード実行バックエンド | `Services/CodeExecutionService.fs`に追加のヘルパーを実装 |
+| 表示モード | メニューの「表示」→「縦書き/横書き切替」、またはツールバーのボタンで切替 |
 
-## Project Layout
+## プロジェクト構成
 
 ```
 ZapEditor/
-├── App.axaml(.fs)              # Application shell and lifecycle hooks
+├── App.axaml(.fs)              # アプリケーションシェルとライフサイクル
 ├── Controls/
-│   └── SyntaxHighlightEditor   # Custom TextMate-enabled editor control
-├── Resources/                  # Localized string resources
+│   ├── SyntaxHighlightEditor   # TextMate対応カスタムエディタコントロール
+│   └── WritingModeConverter.fs # 縦書き/横書き表示切替用コンバーター
+├── Resources/                  # 多言語対応リソース文字列
 ├── Services/
-│   ├── CodeExecutionService.fs # External process executor
-│   └── ResourceManager.fs      # Culture-aware resource accessor
+│   ├── CodeExecutionService.fs # 外部プロセス実行サービス
+│   ├── IEditorService.fs       # エディタサービスインターフェース
+│   └── ResourceManager.fs      # カルチャ対応リソースアクセサ
 ├── ViewModels/
-│   └── MainWindowViewModel.fs  # MVVM logic and command bindings
-├── MainWindow.axaml(.fs)       # Main window view + code-behind
-└── Program.fs                  # Entry point
+│   └── MainWindowViewModel.fs  # MVVMロジックとコマンドバインディング
+├── MainWindow.axaml(.fs)       # メインウィンドウビュー + コードビハインド
+├── Tests/                      # ユニットテストプロジェクト
+└── Program.fs                  # エントリーポイント
 ```
 
-## Localization
+## 多言語対応
 
-UI strings live under `Resources/Strings.<culture>.resx`. Add new cultures by duplicating the neutral resource file, translating strings, and wiring the culture code in `ResourceManager.SetLanguage`.
+UI文字列は`Resources/Strings.<culture>.resx`に配置されています。新しい言語を追加するには、ニュートラルリソースファイルを複製し、文字列を翻訳して、`ResourceManager.SetLanguage`でカルチャコードを設定します。
 
-The current UI culture is toggled at runtime from `MainWindowViewModel.SetLanguage`, ensuring the menu, status text, and dialogs are refreshed immediately.
+現在のUIカルチャは、`MainWindowViewModel.SetLanguage`から実行時に切り替えられ、メニュー、ステータステキスト、ダイアログがすぐに更新されます。
 
-## Development Workflow
+### サポート言語
+
+- 🇯🇵 日本語（ja）
+- 🇬🇧 英語（en）
+- 🇨🇳 中国語（zh）
+
+## 開発ワークフロー
 
 ```bash
-# Lint / build continuously
+# ビルド
 dotnet build
 
-# Clean intermediate artifacts
+# 中間成果物のクリーンアップ
 dotnet clean
 
-# Run the editor in watch mode (hot reload)
+# ウォッチモードでエディタを実行（ホットリロード）
 dotnet watch run
 
-# Run tests (if available)
+# テストの実行
 dotnet test
+
+# 継続的ビルド
+dotnet build --no-incremental
 ```
 
-When working on TextMate grammars, enable Avalonia diagnostics (`dotnet run -c Debug`) to inspect control trees in-app.
+TextMate文法を作業する場合は、Avalonia診断機能を有効にして（`dotnet run -c Debug`）、アプリ内でコントロールツリーを検査できます。
 
-## Recent Improvements
+## 最近の更新
 
-### v1.1.0 - UI Enhancements and Bug Fixes
-- **Fixed Language Selector**: ComboBox now properly binds to ViewModel with AvailableLanguages property
-- **Enhanced File Operations**: Complete file opening functionality with comprehensive error handling
-- **Resolved Build Warnings**: Eliminated F# compiler warnings and NuGet audit warnings
-- **Improved Error Handling**: Added proper exception handling for file access operations
-- **Code Quality**: Removed unused recursive object references and cleaned up resource files
+### v1.2.0 - 縦書き/横書き切替機能の追加
 
-### Key Technical Changes
-- MainWindowViewModel: Removed `as this` parameter to eliminate FS1183 warning
-- MainWindow.axaml: Updated ComboBox binding to use ItemsSource and SelectedItem
-- ZapEditor.fsproj: Added `NuGetAudit=false` and `NuGetAuditMode=direct` settings
-- File Service: Enhanced error handling for UnauthorizedAccessException, PathTooLongException, etc.
-- Resource Management: Cleaned up Japanese resource file formatting
+**新機能**
+- ✨ **縦書き/横書き表示モード切替機能**を実装
+  - メニューバー「表示」→「縦書き/横書き切替」から切替
+  - ツールバーに専用の切替ボタンを追加
+  - リアルタイムでテキストの表示方向を変更
+- 🧪 **ユニットテストプロジェクト**を追加（7テスト）
+- 🔄 **CI/CDワークフロー**にテストステップを追加
 
-## Contributing
+**バグ修正**
+- 🐛 ビルドエラーの修正（AttachDevTools呼び出しを削除）
+- 🔧 コンパイル警告の解消
 
-Contributions are very welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on setting up your environment, opening issues, and submitting pull requests.
+**技術的変更**
+- `WritingModeConverter.fs`: 縦書き/横書き表示用データバインディングコンバーター
+- `IEditorService.fs`: `IsVerticalWritingMode`プロパティを追加
+- `SyntaxHighlightEditor.axaml.fs`: RenderTransformによる90度回転を実装
+- `MainWindowViewModel.fs`: `ToggleWritingModeCommand`を追加
 
-## License
+### v1.1.0 - UIの改善とバグ修正
 
-Licensed under the [Apache License 2.0](LICENSE).
+**修正内容**
+- 🔧 **言語セレクタの修正**: ComboBoxが正しくViewModelにバインドされるように修正
+- 📁 **ファイル操作の強化**: 包括的なエラーハンドリングを備えた完全なファイル開く機能
+- ⚠️ **ビルド警告の解決**: F#コンパイラ警告とNuGet監査警告を解消
+- 🛡️ **エラーハンドリングの改善**: ファイルアクセス操作に適切な例外処理を追加
+- 🎨 **コード品質**: 未使用の再帰オブジェクト参照を削除し、リソースファイルをクリーンアップ
+
+**技術的変更**
+- MainWindowViewModel: FS1183警告を解消するため`as this`パラメータを削除
+- MainWindow.axaml: ComboBoxバインディングを`ItemsSource`と`SelectedItem`を使用するように更新
+- ZapEditor.fsproj: `NuGetAudit=false`と`NuGetAuditMode=direct`設定を追加
+- File Service: UnauthorizedAccessException、PathTooLongException等の例外処理を強化
+- Resource Management: 日本語リソースファイルのフォーマットをクリーンアップ
+
+## 貢献方法
+
+コントリビューションを歓迎します！環境のセットアップ、Issue の作成、Pull Request の提出については、[CONTRIBUTING.md](CONTRIBUTING.md)を参照してください。
+
+## ライセンス
+
+[Apache License 2.0](LICENSE)でライセンスされています。
+
+## サポート
+
+- 🐛 **バグ報告**: [Issues](https://github.com/SilentMalachite/ZapEditor/issues)ページで報告してください
+- 💡 **機能リクエスト**: 新機能のアイデアがあれば、Issueで提案してください
+- 📖 **ドキュメント**: ドキュメントの改善提案も歓迎します
+- 🌟 **スター**: プロジェクトが気に入ったら、GitHubでスターをお願いします！
+
+## ロードマップ
+
+今後の予定：
+- [ ] プラグインシステムの実装
+- [ ] より多くの言語のシンタックスハイライト対応
+- [ ] テーマのカスタマイズ機能
+- [ ] 検索・置換機能の強化
+- [ ] Git統合機能
+- [ ] コード補完機能
+
+ご意見・ご要望があれば、[Discussions](https://github.com/SilentMalachite/ZapEditor/discussions)でお聞かせください。
