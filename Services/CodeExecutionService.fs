@@ -36,7 +36,7 @@ type CodeExecutionService() =
         |> List.exists (fun allowed -> 
             fileName.StartsWith(allowed, StringComparison.OrdinalIgnoreCase))
 
-    static member private ValidateExecutablePath
+    static member private ValidateExecutablePath(executable: string) =
         try
             let path = 
                 if Path.IsPathRooted(executable) then
