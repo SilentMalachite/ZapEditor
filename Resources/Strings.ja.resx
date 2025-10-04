@@ -372,4 +372,12 @@
   <data name="App_Title" xml:space="preserve">
     <value>ZapEditor - 多言語対応テキストエディタ</value>
   </data>
+
+  <!-- Writing Mode -->
+  <data name="WritingMode_Vertical" xml:space="preserve">
+    <value>縦書き</value>
+  </data>
+  <data name="WritingMode_Horizontal" xml:space="preserve">
+    <value>横書き</value>
+  </data>
 </root>

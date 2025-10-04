@@ -14,3 +14,4 @@ type IEditorService =
     abstract Paste: unit -> unit
     abstract SelectAll: unit -> unit
     abstract SetLanguage: string -> unit
+    abstract IsVerticalWritingMode: bool with get, set

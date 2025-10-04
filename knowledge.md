@@ -24,6 +24,7 @@ ZapEditor is a cross-platform code editor built with F# and Avalonia UI. It feat
 - File operations (open/save dialogs)
 - Code execution service
 - Resource management
+- Vertical writing mode (縦書き) with horizontal/vertical toggle
 
 ## Development Commands
 - Build: `dotnet build`
@@ -55,8 +56,16 @@ ZapEditor is a cross-platform code editor built with F# and Avalonia UI. It feat
 - **Resource Management**: Cleaned up Japanese resource file formatting and removed duplicate entries
 - **Error Messages**: Enhanced status messages for better user feedback
 
+## Vertical Writing Mode
+- Implemented using RenderTransform rotation (90 degrees)
+- Toggle button in toolbar and menu item under View menu
+- Localized button text (縦書き/横書き for Japanese, Vertical/Horizontal for English, 竖排/横排 for Chinese)
+- Uses WritingModeConverter for data binding
+- State managed in MainWindowViewModel and IEditorService
+
 ## Notes
 - Uses compiled bindings by default for better performance
 - Debug builds include Avalonia DevTools
 - Targets Windows executable with COM interop support
 - Network-independent builds (NuGet audit disabled)
+- AvaloniaEdit doesn't natively support vertical text - rotation transform is used as workaround

@@ -2,7 +2,6 @@ namespace ZapEditor
 
 open Avalonia
 open Avalonia.Controls
-open Avalonia.Diagnostics
 open Avalonia.Markup.Xaml
 open Avalonia.Platform.Storage
 open ZapEditor.ViewModels
@@ -20,9 +19,6 @@ type MainWindow () as this =
         this.DataContext <- viewModel
 
     member private this.InitializeComponent() =
-#if DEBUG
-        this.AttachDevTools()
-#endif
         AvaloniaXamlLoader.Load(this)
 
     override this.OnOpened(e) =

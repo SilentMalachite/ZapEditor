@@ -51,6 +51,7 @@ type MainWindowViewModel(?fileService: IFileService, ?editorService: IEditorServ
         ResourceManager.GetString("Language_CSS")
         ResourceManager.GetString("Language_JSON")
         ResourceManager.GetString("Language_XML") |]
+    let mutable isVerticalWritingMode = false
 
     let propertyChanged = Event<PropertyChangedEventHandler, PropertyChangedEventArgs>()
 
@@ -107,6 +108,18 @@ type MainWindowViewModel(?fileService: IFileService, ?editorService: IEditorServ
 
     member this.AvailableLanguages = availableLanguages
 
+    member this.IsVerticalWritingMode
+        with get() = isVerticalWritingMode
+        and set(value) =
+            if isVerticalWritingMode <> value then
+                isVerticalWritingMode <- value
+                this.NotifyPropertyChanged(nameof this.IsVerticalWritingMode)
+                match editorService with
+                | Some service -> service.IsVerticalWritingMode <- value
+                | None -> ()
+                let mode = if value then "縦書き" else "横書き"
+                this.StatusBarText <- sprintf "表示モード: %s" mode
+
     member private this.UpdateLanguageList() =
         availableLanguages <- [| 
             ResourceManager.GetString("Language_AutoDetect")
@@ -130,6 +143,7 @@ type MainWindowViewModel(?fileService: IFileService, ?editorService: IEditorServ
     member this.DebugCodeCommand = RelayCommand(fun _ -> this.DebugCode())
     member this.SetLanguageCommand = RelayCommand(fun param -> this.SetLanguage(param :?> string))
     member this.LanguageChangedCommand = RelayCommand(fun param -> this.OnLanguageChanged(param :?> string))
+    member this.ToggleWritingModeCommand = RelayCommand(fun _ -> this.ToggleWritingMode())
 
     member this.UndoCommand = RelayCommand(fun _ -> this.Undo())
     member this.RedoCommand = RelayCommand(fun _ -> this.Redo())
@@ -537,6 +551,9 @@ type MainWindowViewModel(?fileService: IFileService, ?editorService: IEditorServ
                 this.StatusBarText <- ResourceManager.GetString("Status_NothingToSelect")
         | None ->
             this.StatusBarText <- ResourceManager.GetString("Status_NoEditor")
+
+    member private this.ToggleWritingMode() =
+        this.IsVerticalWritingMode <- not this.IsVerticalWritingMode
 
     member this.SetFileOperations(openFunc, saveFunc) =
         openFileDialogFunc <- openFunc

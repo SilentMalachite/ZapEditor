@@ -19,6 +19,7 @@ type SyntaxHighlightEditor () as this =
     
     let mutable textEditor: TextEditor option = None
     let mutable textMateInstallation: TextMate.Installation option = None
+    let mutable isVerticalWritingMode = false
 
     do this.InitializeComponent()
     
@@ -110,6 +111,13 @@ type SyntaxHighlightEditor () as this =
                 textMate.SetGrammar(sprintf "source.%s" langName) |> ignore
             | None -> ()
 
+        member this.IsVerticalWritingMode
+            with get() = isVerticalWritingMode
+            and set(value) =
+                if isVerticalWritingMode <> value then
+                    isVerticalWritingMode <- value
+                    this.ApplyWritingMode()
+
     member private this.InitializeComponent() =
         AvaloniaXamlLoader.Load(this)
         this.Loaded.Add(fun _ -> this.OnLoaded())
@@ -134,6 +142,19 @@ type SyntaxHighlightEditor () as this =
         textMateInstallation <- Some installation
         this.Editor <- Some editor
         this.TextMateInstallation <- Some installation
+
+    member private this.ApplyWritingMode() =
+        match textEditor with
+        | Some editor ->
+            if isVerticalWritingMode then
+                // Rotate 90 degrees clockwise for vertical writing
+                editor.RenderTransform <- Avalonia.Media.RotateTransform(90.0)
+                editor.RenderTransformOrigin <- Avalonia.RelativePoint(0.5, 0.5, Avalonia.RelativeUnit.Relative)
+            else
+                // Reset to horizontal writing
+                editor.RenderTransform <- null
+                editor.RenderTransformOrigin <- Avalonia.RelativePoint(0.0, 0.0, Avalonia.RelativeUnit.Relative)
+        | None -> ()
 
     member val Editor: TextEditor option = None with get, set
     member val TextMateInstallation: TextMate.Installation option = None with get, set

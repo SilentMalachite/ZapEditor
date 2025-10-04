@@ -9,6 +9,10 @@
         x:DataType="viewModels:MainWindowViewModel"
         Title="ZapEditor - 多言語対応テキストエディタ">
 
+    <Window.Resources>
+        <controls:WritingModeConverter x:Key="WritingModeConverter" />
+    </Window.Resources>
+
     <Grid RowDefinitions="Auto, *" ColumnDefinitions="200, *">
 
         <!-- メニューバー -->
@@ -38,6 +42,8 @@
                     <MenuItem Header="English" Command="{Binding SetLanguageCommand}" CommandParameter="en" />
                     <MenuItem Header="中文" Command="{Binding SetLanguageCommand}" CommandParameter="zh" />
                 </MenuItem>
+                <Separator />
+                <MenuItem Header="縦書き/横書き切替(_W)" Command="{Binding ToggleWritingModeCommand}" />
             </MenuItem>
             <MenuItem Header="実行(_R)">
                 <MenuItem Header="コードを実行(_X)" Command="{Binding RunCodeCommand}" />
@@ -73,6 +79,12 @@
                 <Separator Margin="5" />
                 <Button Content="実行" Command="{Binding RunCodeCommand}" Margin="2" Width="60" />
                 <Button Content="デバッグ" Command="{Binding DebugCodeCommand}" Margin="2" Width="60" />
+                <Separator Margin="5" />
+                <Button Command="{Binding ToggleWritingModeCommand}" Margin="2" Width="80">
+                    <Button.Content>
+                        <TextBlock Text="{Binding IsVerticalWritingMode, Converter={StaticResource WritingModeConverter}}" />
+                    </Button.Content>
+                </Button>
                 <Separator Margin="5" />
                 <ComboBox Name="LanguageSelector" Width="120" Margin="2"
                           ItemsSource="{Binding AvailableLanguages}"

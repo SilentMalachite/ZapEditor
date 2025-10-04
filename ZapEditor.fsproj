@@ -5,6 +5,8 @@
     <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <NuGetAudit>false</NuGetAudit>
+    <NuGetAuditMode>direct</NuGetAuditMode>
   </PropertyGroup>
 
 <ItemGroup>
@@ -13,6 +15,7 @@
     <Compile Include="Services/ResourceManager.fs" />
     <Compile Include="Services/FileService.fs" />
     <Compile Include="Services/CodeExecutionService.fs" />
+    <Compile Include="Controls/WritingModeConverter.fs" />
     <Compile Include="Controls/SyntaxHighlightEditor.axaml.fs" />
     <Compile Include="ViewModels/MainWindowViewModel.fs" />
     <Compile Include="MainWindow.axaml.fs" />

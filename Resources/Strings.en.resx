@@ -234,4 +234,12 @@
   <data name="App_Title" xml:space="preserve">
     <value>ZapEditor - Multilingual Text Editor</value>
   </data>
+
+  <!-- Writing Mode -->
+  <data name="WritingMode_Vertical" xml:space="preserve">
+    <value>Vertical</value>
+  </data>
+  <data name="WritingMode_Horizontal" xml:space="preserve">
+    <value>Horizontal</value>
+  </data>
 </root>
