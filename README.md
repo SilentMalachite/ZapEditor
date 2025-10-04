@@ -181,7 +181,26 @@ TextMate文法を作業する場合は、Avalonia診断機能を有効にして�
 
 ## 貢献方法
 
-コントリビューションを歓迎します！環境のセットアップ、Issue の作成、Pull Request の提出については、[CONTRIBUTING.md](CONTRIBUTING.md)を参照してください。
+**🎉 コントリビューター大募集中！**
+
+ZapEditorは、あなたの貢献を心から歓迎します。初心者から上級者まで、誰でも参加できるタスクがあります！
+
+### 貢献の始め方
+
+1. 📖 [CONTRIBUTING.md](CONTRIBUTING.md)で貢献ガイドラインを確認
+2. 🎯 [CONTRIBUTORS_WANTED.md](CONTRIBUTORS_WANTED.md)で募集中のタスクを確認
+3. 💬 [Issues](https://github.com/SilentMalachite/ZapEditor/issues)で作業するタスクを見つける
+4. 🚀 Pull Requestを送信
+
+### 特に募集中
+
+- 🧪 **テストの追加**: テストカバレッジの向上
+- 🔍 **検索・置換機能**: 基本的な検索機能の実装
+- 📑 **タブ機能**: 複数ファイルの同時編集
+- 🎨 **テーマシステム**: カスタムテーマのサポート
+- 📝 **ドキュメント**: 翻訳や改善
+
+小さな貢献でも大歓迎です！[初めての方向けガイド](CONTRIBUTORS_WANTED.md#初めての貢献ガイド)もご用意しています。
 
 ## ライセンス
 
